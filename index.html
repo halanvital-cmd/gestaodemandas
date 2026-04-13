@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Gerenciamento da rotina do trabalho do dia-a-dia</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #1a237e;
+    --primary-light: #283593;
+    --accent: #42a5f5;
+    --aberto: #ef5350;
+    --andamento: #ffa726;
+    --finalizado: #66bb6a;
+    --alta: #ef5350;
+    --media: #ffa726;
+    --baixa: #66bb6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: #f0f2f5;
+    font-family: 'Segoe UI', sans-serif;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* NAVBAR */
+  .top-navbar {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .top-navbar h1 { font-size: 0.95rem; margin: 0; font-weight: 700; letter-spacing: 0.3px; line-height: 1.2; }
+  .top-navbar .subtitle { font-size: 0.68rem; opacity: 0.75; }
+  .navbar-logo { height: 42px; width: 42px; object-fit: contain; border-radius: 6px; background: white; padding: 2px; flex-shrink: 0; }
+  .navbar-left { display: flex; align-items: center; gap: 10px; }
+  .titulo-completo { display: inline; }
+  .titulo-curto { display: none; }
+  @media (max-width: 480px) {
+    .titulo-completo { display: none; }
+    .titulo-curto { display: inline; }
+    .top-navbar h1 { font-size: 0.82rem; }
+    .navbar-logo { height: 34px; width: 34px; }
+  }
+  .btn-export-nav {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-export-nav:hover { background: rgba(255,255,255,0.25); }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: white;
+    display: flex;
+    border-top: 1px solid #e0e0e0;
+    z-index: 200;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    width: 100%;
+    overflow: hidden;
+  }
+  .bottom-nav button {
+    flex: 1 1 0;
+    min-width: 0;
+    border: none;
+    background: none;
+    padding: 8px 2px 6px;
+    font-size: 0.6rem;
+    color: #9e9e9e;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .bottom-nav button i { font-size: 1.1rem; }
+  .bottom-nav button.active { color: var(--primary); }
+  .bottom-nav button.active i { color: var(--primary); }
+  .bottom-nav .btn-new-fab {
+    flex: 1 1 0;
+    background: var(--primary);
+    color: white;
+    border-radius: 0;
+  }
+  .bottom-nav .btn-new-fab i { color: white; font-size: 1.3rem; }
+  .bottom-nav .btn-new-fab:hover { background: var(--primary-light); }
+
+  /* TABS CONTENT */
+  .tab-content-area { display: none; padding: 12px; }
+  .tab-content-area.active { display: block; }
+  @media (min-width: 768px) {
+    .tab-content-area { max-width: 900px; margin: 0 auto; padding: 16px; }
+    .top-navbar { padding: 12px 24px; }
+  }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border-left: 4px solid #ccc;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card.total { border-left-color: var(--primary); }
+  .kpi-card.aberto { border-left-color: var(--aberto); }
+  .kpi-card.andamento { border-left-color: var(--andamento); }
+  .kpi-card.finalizado { border-left-color: var(--finalizado); }
+  .kpi-number { font-size: 2rem; font-weight: 800; line-height: 1; }
+  .kpi-label { font-size: 0.72rem; color: #757575; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-pct { font-size: 0.75rem; color: #9e9e9e; margin-top: 4px; }
+  .kpi-icon { position: absolute; right: 12px; top: 12px; font-size: 1.6rem; opacity: 0.12; }
+
+  /* CHARTS */
+  .chart-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    margin-bottom: 12px;
+  }
+  .chart-title { font-size: 0.82rem; font-weight: 700; color: #424242; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .chart-card canvas { max-height: 200px; }
+  @media (max-width: 480px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-card canvas { max-height: 180px; }
+  }
+
+  /* FILTERS */
+  .filter-bar {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-bar select, .filter-bar input {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    flex: 1;
+    min-width: 100px;
+    outline: none;
+    background: #fafafa;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+
+  /* DEMAND CARDS */
+  .demand-list { display: flex; flex-direction: column; gap: 10px; }
+  .demand-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border-left: 4px solid #ccc;
+    transition: transform 0.15s;
+    cursor: pointer;
+  }
+  .demand-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+  .demand-card.status-Aberto { border-left-color: var(--aberto); }
+  .demand-card.status-Em.Andamento { border-left-color: var(--andamento); }
+  .demand-card.status-Finalizado { border-left-color: var(--finalizado); }
+  .demand-card.prior-Alta { border-right: 3px solid var(--alta); }
+  .demand-card.prior-Média { border-right: 3px solid var(--media); }
+  .demand-card.prior-Baixa { border-right: 3px solid var(--baixa); }
+  .demand-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .demand-num { font-size: 0.7rem; color: #9e9e9e; font-weight: 600; }
+  .demand-title { font-size: 0.92rem; font-weight: 700; color: #212121; flex: 1; margin-right: 8px; }
+  .badge-status, .badge-prior {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-Aberto { background: #ffebee; color: var(--aberto); }
+  .badge-Em-Andamento { background: #fff8e1; color: var(--andamento); }
+  .badge-Finalizado { background: #e8f5e9; color: var(--finalizado); }
+  .badge-Alta { background: #ffebee; color: var(--alta); }
+  .badge-Média { background: #fff8e1; color: var(--andamento); }
+  .badge-Baixa { background: #e8f5e9; color: var(--baixa); }
+  .demand-meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .demand-meta span { font-size: 0.72rem; color: #757575; display: flex; align-items: center; gap: 3px; }
+  .demand-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5; }
+  .btn-action {
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-edit { background: #e3f2fd; color: #1565c0; }
+  .btn-edit:hover { background: #1565c0; color: white; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+  .btn-delete:hover { background: #c62828; color: white; }
+  .btn-status { background: #e8f5e9; color: #2e7d32; flex: 1; }
+  .btn-status:hover { background: #2e7d32; color: white; }
+  .demand-photo { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; margin-left: 8px; border: 2px solid #e0e0e0; }
+  .demand-photo-wrap { display: flex; align-items: flex-start; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9e9e9e;
+  }
+  .empty-state i { font-size: 3rem; margin-bottom: 12px; display: block; opacity: 0.4; }
+
+  /* FORM */
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    margin-bottom: 12px;
+  }
+  .form-card label { font-size: 0.8rem; font-weight: 600; color: #424242; margin-bottom: 4px; display: block; }
+  .form-card input, .form-card select, .form-card textarea {
+    width: 100%;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #fafafa;
+    font-family: inherit;
+  }
+  .form-card input:focus, .form-card select:focus, .form-card textarea:focus {
+    border-color: var(--accent);
+    background: white;
+  }
+  .form-card textarea { resize: vertical; min-height: 80px; }
+  .form-group { margin-bottom: 12px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-primary-full {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .btn-primary-full:hover { background: var(--primary-light); transform: translateY(-1px); }
+  .btn-cancel-full {
+    width: 100%;
+    padding: 12px;
+    background: #f5f5f5;
+    color: #424242;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+
+  /* PHOTO */
+  .photo-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: none;
+    border: 2px solid var(--accent);
+  }
+  .photo-upload-area {
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafa;
+  }
+  .photo-upload-area:hover { border-color: var(--accent); background: #e3f2fd; }
+  .photo-upload-area i { font-size: 2rem; color: #9e9e9e; display: block; margin-bottom: 6px; }
+  .photo-upload-area span { font-size: 0.8rem; color: #757575; }
+
+  /* MODAL */
+  .modal-backdrop-custom {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 500;
+    backdrop-filter: blur(2px);
+  }
+  .modal-backdrop-custom.show { display: flex; align-items: flex-end; justify-content: center; }
+  @media (min-width: 600px) {
+    .modal-backdrop-custom.show { align-items: center; }
+  }
+  .modal-box {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    animation: slideUp 0.25s ease;
+  }
+  @media (min-width: 600px) {
+    .modal-box { border-radius: 16px; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header-custom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-header-custom h2 { font-size: 1.05rem; font-weight: 800; margin: 0; color: var(--primary); }
+  .modal-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: #f5f5f5;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* DETAIL MODAL */
+  .detail-row { margin-bottom: 10px; }
+  .detail-label { font-size: 0.72rem; color: #9e9e9e; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+  .detail-value { font-size: 0.92rem; color: #212121; margin-top: 1px; }
+  .detail-photo { width: 100%; border-radius: 10px; margin-top: 8px; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #9e9e9e;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding-left: 4px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar-custom { background: #e0e0e0; border-radius: 10px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .progress-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+
+  /* TOAST */
+  .toast-container-custom {
+    position: fixed;
+    top: 70px;
+    right: 12px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .toast-item {
+    background: #212121;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    animation: toastIn 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  @keyframes toastIn {
+    from { transform: translateX(60px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .toast-success { border-left: 4px solid var(--finalizado); }
+  .toast-error { border-left: 4px solid var(--aberto); }
+
+  /* RESPONSIVE ADJUSTMENTS */
+  @media (max-width: 400px) {
+    .kpi-number { font-size: 1.7rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLL TOUCH */
+  .demand-list { -webkit-overflow-scrolling: touch; }
+
+  /* LOADING */
+  .loading-spin {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STATUS STEPPER */
+  .status-stepper { display: flex; gap: 4px; margin: 12px 0; }
+  .step-btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .step-btn.active-Aberto { border-color: var(--aberto); background: #ffebee; color: var(--aberto); }
+  .step-btn.active-Andamento { border-color: var(--andamento); background: #fff8e1; color: var(--andamento); }
+  .step-btn.active-Finalizado { border-color: var(--finalizado); background: #e8f5e9; color: var(--finalizado); }
+
+  /* ATRASADO */
+  .demand-card.atrasado {
+    animation: pulseBorder 1.5s ease-in-out infinite;
+    border-left-color: #b71c1c !important;
+  }
+  @keyframes pulseBorder {
+    0%, 100% { box-shadow: 0 2px 8px rgba(183,28,28,0.15); }
+    50% { box-shadow: 0 2px 18px rgba(183,28,28,0.5); }
+  }
+  .badge-atrasado { background: #b71c1c; color: white; font-size: 0.62rem; padding: 2px 7px; border-radius: 20px; font-weight: 700; margin-left: 4px; }
+
+  /* TABELA */
+  .tabela-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabela-wrap table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 680px; }
+  .tabela-wrap th { background: var(--primary); color: white; padding: 10px 12px; text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+  .tabela-wrap td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .tabela-wrap tr:last-child td { border-bottom: none; }
+  .tabela-wrap tr:hover td { background: #f5f5f5; }
+  .cel-edit { cursor: cell; }
+  .cel-edit:hover { background: #e3f2fd !important; outline: 2px solid var(--accent); outline-offset: -2px; }
+  .cel-edit:active { background: #bbdefb !important; }
+  body.dark .cel-edit:hover { background: #1a3a5c !important; }
+  .tabela-dica {
+    font-size: 0.72rem;
+    color: #9e9e9e;
+    text-align: center;
+    padding: 8px;
+    background: white;
+    border-radius: 0 0 12px 12px;
+    border-top: 1px dashed #e0e0e0;
+  }
+  @media (max-width: 480px) {
+    .tabela-wrap table { font-size: 0.72rem; }
+    .tabela-wrap th, .tabela-wrap td { padding: 8px 8px; }
+  }
+
+  /* DARK MODE */
+  body.dark {
+    background: #121212;
+    color: #e0e0e0;
+  }
+  body.dark .bottom-nav { background: #1e1e1e; border-top-color: #333; }
+  body.dark .bottom-nav button { color: #757575; }
+  body.dark .bottom-nav button.active { color: #90caf9; }
+  body.dark .bottom-nav button.active i { color: #90caf9; }
+  body.dark .kpi-card,
+  body.dark .chart-card,
+  body.dark .filter-bar,
+  body.dark .demand-card,
+  body.dark .form-card,
+  body.dark .tabela-wrap,
+  body.dark .modal-box { background: #1e1e1e; color: #e0e0e0; }
+  body.dark .chart-title { color: #bdbdbd; }
+  body.dark .kpi-label { color: #9e9e9e; }
+  body.dark .demand-title { color: #f5f5f5; }
+  body.dark .demand-num, body.dark .demand-meta span { color: #757575; }
+  body.dark .filter-bar select, body.dark .filter-bar input { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+  body.dark .form-card label { color: #bdbdbd; }
+  body.dark .form-card input, body.dark .form-card select, body.dark .form-card textarea { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+  body.dark .section-title { color: #757575; }
+  body.dark .progress-bar-custom { background: #333; }
+  body.dark .modal-close { background: #333; color: #e0e0e0; }
+  body.dark .detail-label { color: #757575; }
+  body.dark .detail-value { color: #e0e0e0; }
+  body.dark .step-btn { background: #2a2a2a; border-color: #444; color: #bdbdbd; }
+  body.dark .btn-cancel-full { background: #2a2a2a; color: #bdbdbd; }
+  body.dark .photo-upload-area { background: #2a2a2a; border-color: #444; }
+  body.dark .photo-upload-area span { color: #9e9e9e; }
+  body.dark .tabela-wrap th { background: #283593; }
+  body.dark .tabela-wrap td { border-bottom-color: #2a2a2a; }
+  body.dark .tabela-wrap tr:hover td { background: #2a2a2a; }
+  body.dark .demand-card { background: #1e1e1e; }
+
+  /* PERIODO FILTER */
+  .periodo-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    flex-wrap: nowrap;
+  }
+  .periodo-bar::-webkit-scrollbar { display: none; }
+  .periodo-btn {
+    padding: 6px 14px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    background: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #757575;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .periodo-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  body.dark .periodo-btn { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
+  body.dark .periodo-btn.active { background: var(--primary); color: white; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<div class="top-navbar">
+  <div class="navbar-left">
+    <img src="grd_logo.png" class="navbar-logo" alt="GRD" onerror="this.style.display='none'">
+    <div>
+      <h1>
+        <span class="titulo-completo">Gerenciamento da rotina do trabalho do dia-a-dia</span>
+        <span class="titulo-curto">GRD · Halan Vital</span>
+      </h1>
+      <div class="subtitle" id="navSubtitle">Carregando...</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div id="syncStatusDot" title="Sem conexão com Sheets" style="width:10px;height:10px;border-radius:50%;background:#9e9e9e;flex-shrink:0;"></div>
+    <button class="btn-export-nav" onclick="toggleDarkMode()" id="btnDark" title="Modo escuro">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <button class="btn-export-nav" onclick="openSyncModal()">
+      <i class="fa-solid fa-ellipsis-vertical"></i>
+    </button>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-backdrop-custom" id="syncModal" onclick="closeSyncModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h2><i class="fa-solid fa-arrows-rotate me-2"></i>Exportar / Importar</h2>
+      <button class="modal-close" onclick="closeSyncModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- EXCEL -->
+    <div style="background:#e8f5e9;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:0.8rem;font-weight:800;color:#2e7d32;margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel me-1"></i>EXPORTAR EXCEL
+      </div>
+      <div style="font-size:0.78rem;color:#388e3c;margin-bottom:10px;">Gera planilha .xlsx com todas as demandas e KPIs</div>
+      <button class="btn-action btn-status" style="width:100%;padding:10px;" onclick="exportExcel();closeSyncModal()">
+        <i class="fa-solid fa-download me-1"></i>Baixar Excel (.xlsx)
+      </button>
+    </div>
+
+    <!-- BACKUP JSON -->
+    <div style="background:#e3f2fd;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:0.8rem;font-weight:800;color:#1565c0;margin-bottom:6px;">
+        <i class="fa-solid fa-database me-1"></i>BACKUP DOS DADOS
+      </div>
+      <div style="font-size:0.78rem;color:#1976d2;margin-bottom:10px;">
+        Salva <strong>todos os dados</strong> (incluindo fotos) num arquivo .json.<br>
+        Use para transferir do celular para o PC via WhatsApp.
+      </div>
+      <button class="btn-action btn-edit" style="width:100%;padding:10px;" onclick="exportJSON();closeSyncModal()">
+        <i class="fa-solid fa-file-arrow-down me-1"></i>Exportar backup (.json)
+      </button>
+    </div>
+
+    <!-- RESTAURAR JSON -->
+    <div style="background:#fff8e1;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:0.8rem;font-weight:800;color:#e65100;margin-bottom:6px;">
+        <i class="fa-solid fa-file-arrow-up me-1"></i>RESTAURAR DADOS
+      </div>
+      <div style="font-size:0.78rem;color:#ef6c00;margin-bottom:10px;">
+        Carrega um backup .json no dispositivo atual.<br>
+        <strong>Atenção:</strong> os dados atuais serão substituídos.
+      </div>
+      <button class="btn-action" style="width:100%;padding:10px;background:#fff3e0;color:#e65100;" onclick="document.getElementById('importFile').click()">
+        <i class="fa-solid fa-folder-open me-1"></i>Selecionar arquivo .json
+      </button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+
+    <!-- GOOGLE SHEETS -->
+    <div style="background:#fce4ec;border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:0.8rem;font-weight:800;color:#880e4f;margin-bottom:6px;">
+        <i class="fa-solid fa-table me-1"></i>GOOGLE SHEETS (TEMPO REAL)
+      </div>
+      <div style="font-size:0.78rem;color:#ad1457;margin-bottom:10px;">
+        Salva e lê dados do Google Sheets automaticamente.<br>Funciona em qualquer aparelho com internet.
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-action" style="flex:1;padding:10px;background:#fce4ec;color:#880e4f;" onclick="openSetupModal()">
+          <i class="fa-solid fa-gear me-1"></i>Configurar
+        </button>
+        <button class="btn-action" style="flex:1;padding:10px;background:#fce4ec;color:#880e4f;" onclick="sheetsCarregar();closeSyncModal()">
+          <i class="fa-solid fa-cloud-arrow-down me-1"></i>Carregar
+        </button>
+        <button class="btn-action" style="flex:1;padding:10px;background:#fce4ec;color:#880e4f;" onclick="sheetsSyncAll(demandas);closeSyncModal()">
+          <i class="fa-solid fa-cloud-arrow-up me-1"></i>Enviar tudo
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP SHEETS MODAL -->
+<div class="modal-backdrop-custom" id="setupModal" onclick="closeSetupModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h2><i class="fa-solid fa-table me-2" style="color:#880e4f"></i>Configurar Google Sheets</h2>
+      <button class="modal-close" onclick="closeSetupModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <p style="font-size:0.82rem;color:#424242;line-height:1.6;margin-bottom:14px;">
+      Siga o passo a passo abaixo para conectar o app ao Google Sheets:
+    </p>
+
+    <div style="counter-reset:steps;">
+
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;">1</div>
+        <div style="font-size:0.8rem;color:#424242;">Abra o <strong>Google Sheets</strong>, crie uma planilha nova e chame a aba de <code>Demandas</code>.</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;">2</div>
+        <div style="font-size:0.8rem;color:#424242;">No menu da planilha, clique em <strong>Extensões → Apps Script</strong>.</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;">3</div>
+        <div style="font-size:0.8rem;color:#424242;">Apague o código existente, cole o código abaixo e salve (<strong>Ctrl+S</strong>):</div>
+      </div>
+
+      <textarea readonly onclick="this.select()" style="width:100%;height:220px;font-size:0.7rem;font-family:monospace;border:1px solid #e0e0e0;border-radius:8px;padding:10px;background:#f5f5f5;color:#212121;resize:none;margin-bottom:12px;">const SHEET_NAME = 'Demandas';
+const COLS = ['id','num','data','solicitante','setor','maquina','descricao','prioridade','status','observacao','criado','atualizado','finalizado'];
+
+function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const rows = sheet.getDataRange().getValues();
+  if (rows.length <= 1) return ok([]);
+  const data = rows.slice(1).map(r => {
+    const obj = {};
+    COLS.forEach((c,i) => obj[c] = r[i] ?? '');
+    obj.num = Number(obj.num) || 0;
+    return obj;
+  });
+  return ok(data);
+}
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  if (body.action === 'upsert') {
+    upsertRow(sheet, body.demanda);
+  } else if (body.action === 'delete') {
+    deleteRow(sheet, body.id);
+  } else if (body.action === 'syncAll') {
+    sheet.clearContents();
+    sheet.appendRow(COLS);
+    body.demandas.forEach(d => sheet.appendRow(COLS.map(c => d[c] ?? '')));
+  }
+  return ok('done');
+}
+
+function upsertRow(sheet, d) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] == d.id) {
+      sheet.getRange(i+1, 1, 1, COLS.length).setValues([COLS.map(c => d[c] ?? '')]);
+      return;
+    }
+  }
+  if (data.length <= 1) sheet.appendRow(COLS);
+  sheet.appendRow(COLS.map(c => d[c] ?? ''));
+}
+
+function deleteRow(sheet, id) {
+  const data = sheet.getDataRange().getValues();
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][0] == id) { sheet.deleteRow(i+1); return; }
+  }
+}
+
+function ok(data) {
+  return ContentService.createTextOutput(JSON.stringify({status:'ok',data}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</textarea>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;">4</div>
+        <div style="font-size:0.8rem;color:#424242;">Clique em <strong>Implantar → Nova implantação</strong>, escolha <em>App da Web</em>, em "Quem tem acesso" selecione <strong>Qualquer pessoa</strong> e clique em <strong>Implantar</strong>.</div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-start;">
+        <div style="min-width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;font-size:0.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;">5</div>
+        <div style="font-size:0.8rem;color:#424242;">Copie a <strong>URL do app da web</strong> gerada e cole abaixo:</div>
+      </div>
+
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-link me-1"></i>URL do Apps Script</label>
+      <input type="url" id="inputApiUrl" placeholder="https://script.google.com/macros/s/..." style="font-size:0.78rem;">
+    </div>
+
+    <button class="btn-primary-full" onclick="salvarApiUrl()">
+      <i class="fa-solid fa-plug me-2"></i>Conectar ao Google Sheets
+    </button>
+    <button class="btn-cancel-full" onclick="removerApiUrl()" style="margin-top:8px;color:#ef5350;">
+      <i class="fa-solid fa-unlink me-1"></i>Remover conexão
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container-custom" id="toastContainer"></div>
+
+<!-- TABS CONTENT -->
+
+<!-- DASHBOARD -->
+<div class="tab-content-area active" id="tab-dashboard">
+  <div class="section-title mt-2"><i class="fa-solid fa-chart-line me-1"></i>Painel Geral</div>
+
+  <!-- FILTRO PERÍODO -->
+  <div class="periodo-bar">
+    <button class="periodo-btn active" onclick="setPeriodo('tudo',this)">Tudo</button>
+    <button class="periodo-btn" onclick="setPeriodo('semana',this)">Esta semana</button>
+    <button class="periodo-btn" onclick="setPeriodo('mes',this)">Este mês</button>
+    <button class="periodo-btn" onclick="setPeriodo('trimestre',this)">Trimestre</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card total">
+      <i class="fa-solid fa-list-check kpi-icon"></i>
+      <div class="kpi-number" id="kpiTotal">0</div>
+      <div class="kpi-label">Total</div>
+      <div class="kpi-pct" id="kpiTotalSub">demandas registradas</div>
+    </div>
+    <div class="kpi-card aberto">
+      <i class="fa-solid fa-circle-exclamation kpi-icon"></i>
+      <div class="kpi-number" style="color:var(--aberto)" id="kpiAberto">0</div>
+      <div class="kpi-label">Em Aberto</div>
+      <div class="kpi-pct" id="kpiAbertoPct">0% do total</div>
+    </div>
+    <div class="kpi-card andamento">
+      <i class="fa-solid fa-spinner kpi-icon"></i>
+      <div class="kpi-number" style="color:var(--andamento)" id="kpiAndamento">0</div>
+      <div class="kpi-label">Em Andamento</div>
+      <div class="kpi-pct" id="kpiAndamentoPct">0% do total</div>
+    </div>
+    <div class="kpi-card finalizado">
+      <i class="fa-solid fa-circle-check kpi-icon"></i>
+      <div class="kpi-number" style="color:var(--finalizado)" id="kpiFinalizado">0</div>
+      <div class="kpi-label">Finalizadas</div>
+      <div class="kpi-pct" id="kpiFinalizadoPct">0% do total</div>
+    </div>
+  </div>
+
+  <!-- PROGRESSO GERAL -->
+  <div class="chart-card mb-3">
+    <div class="chart-title"><i class="fa-solid fa-gauge-high me-1"></i>Progresso Geral</div>
+    <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#757575;margin-bottom:4px;">
+      <span>Taxa de conclusão</span>
+      <span id="txConclusao" style="font-weight:700;color:var(--finalizado)">0%</span>
+    </div>
+    <div class="progress-bar-custom">
+      <div class="progress-fill" id="progressFill" style="width:0%;background:var(--finalizado)"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#9e9e9e;margin-top:6px;">
+      <span id="kpiAltaCount">Alta: 0</span>
+      <span id="kpiMediaCount">Média: 0</span>
+      <span id="kpiBaixaCount">Baixa: 0</span>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="chart-grid mb-3">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">Status</div>
+      <canvas id="chartStatus" height="180"></canvas>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">Prioridade</div>
+      <canvas id="chartPrioridade" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- CHART LINHA -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fa-solid fa-chart-line me-1"></i>Evolução Mensal (últimos 6 meses)</div>
+    <canvas id="chartEvolucao" height="160"></canvas>
+  </div>
+
+  <!-- CHART SETORES -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fa-solid fa-building me-1"></i>Demandas por Setor</div>
+    <div style="max-height:200px;overflow:hidden;">
+      <canvas id="chartSetor"></canvas>
+    </div>
+  </div>
+
+  <!-- CHART TEMPO MÉDIO -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fa-solid fa-stopwatch me-1"></i>Tempo Médio de Resolução (dias)</div>
+    <div style="max-height:180px;overflow:hidden;">
+      <canvas id="chartTempo"></canvas>
+    </div>
+    <div id="tempoMedioInfo" style="font-size:0.75rem;color:#9e9e9e;margin-top:8px;text-align:center;"></div>
+  </div>
+</div>
+
+<!-- ABA TABELA -->
+<div class="tab-content-area" id="tab-tabela">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div class="section-title" style="margin:0"><i class="fa-solid fa-table me-1"></i>Tabela de Demandas</div>
+    <button class="btn-action btn-edit" style="padding:6px 12px;font-size:0.75rem;" onclick="exportExcel()">
+      <i class="fa-solid fa-file-excel me-1"></i>Excel
+    </button>
+  </div>
+
+  <!-- FILTROS TABELA -->
+  <div class="filter-bar" style="margin-bottom:10px;">
+    <input type="text" id="tabelaSearch" placeholder="Buscar..." oninput="renderTabela()" style="padding-left:10px;">
+    <select id="tabelaStatus" onchange="renderTabela()">
+      <option value="">Todos status</option>
+      <option>Aberto</option>
+      <option>Em Andamento</option>
+      <option>Finalizado</option>
+    </select>
+    <select id="tabelaPrior" onchange="renderTabela()">
+      <option value="">Toda prioridade</option>
+      <option>Alta</option>
+      <option>Média</option>
+      <option>Baixa</option>
+    </select>
+  </div>
+
+  <!-- dica mobile -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.75rem;color:#1565c0;background:#e3f2fd;border-radius:10px;padding:10px 14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);font-weight:600;">
+    <i class="fa-solid fa-pen-to-square" style="font-size:1rem;"></i>
+    <span>Clique/toque em qualquer célula colorida para editar diretamente · Enter para confirmar · Esc para cancelar</span>
+  </div>
+
+  <div class="tabela-wrap">
+    <table id="tabelaDemandas">
+      <thead>
+        <tr>
+          <th onclick="sortTabela('num')" style="cursor:pointer">Nº ↕</th>
+          <th onclick="sortTabela('data')" style="cursor:pointer">Data ↕</th>
+          <th>Solicitante</th>
+          <th>Setor</th>
+          <th>Máquina</th>
+          <th>Descrição</th>
+          <th onclick="sortTabela('prioridade')" style="cursor:pointer">Prior. ↕</th>
+          <th onclick="sortTabela('status')" style="cursor:pointer">Status ↕</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaBody"></tbody>
+    </table>
+    <div class="tabela-dica" id="tabelaCount"></div>
+  </div>
+</div>
+
+<!-- LISTA DE DEMANDAS -->
+<div class="tab-content-area" id="tab-demandas">
+  <div class="filter-bar">
+    <input type="text" id="filterSearch" placeholder="&#xf002; Buscar..." oninput="renderList()" style="padding-left:10px;">
+    <select id="filterStatus" onchange="renderList()">
+      <option value="">Todos status</option>
+      <option>Aberto</option>
+      <option>Em Andamento</option>
+      <option>Finalizado</option>
+    </select>
+    <select id="filterPrior" onchange="renderList()">
+      <option value="">Toda prioridade</option>
+      <option>Alta</option>
+      <option>Média</option>
+      <option>Baixa</option>
+    </select>
+  </div>
+  <div class="section-title" id="listCount">0 demandas</div>
+  <div class="demand-list" id="demandList"></div>
+</div>
+
+<!-- NOVA DEMANDA -->
+<div class="tab-content-area" id="tab-nova">
+  <div class="form-card">
+    <div class="modal-header-custom" style="margin-bottom:12px;">
+      <h2 id="formTitle"><i class="fa-solid fa-plus-circle me-2"></i>Nova Demanda</h2>
+      <div style="font-size:0.75rem;color:#9e9e9e" id="formNumLabel"></div>
+    </div>
+    <input type="hidden" id="editId">
+
+    <div class="form-group">
+      <label><i class="fa-regular fa-calendar me-1"></i>Data</label>
+      <input type="date" id="fData" required>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><i class="fa-solid fa-user me-1"></i>Solicitante</label>
+        <input type="text" id="fSolicitante" placeholder="Nome do solicitante" required>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-building me-1"></i>Setor</label>
+        <input type="text" id="fSetor" placeholder="Ex: Produção" list="setoresDatalist">
+        <datalist id="setoresDatalist"></datalist>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-gears me-1"></i>Máquina / Equipamento</label>
+      <input type="text" id="fMaquina" placeholder="Ex: Prensa 03, Torno CNC...">
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-clipboard-list me-1"></i>Descrição da Atividade</label>
+      <textarea id="fDescricao" rows="3" placeholder="Descreva o que precisa ser feito..." required></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><i class="fa-solid fa-fire me-1"></i>Prioridade</label>
+        <select id="fPrioridade">
+          <option value="Alta">🔴 Alta</option>
+          <option value="Média" selected>🟡 Média</option>
+          <option value="Baixa">🟢 Baixa</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-circle-half-stroke me-1"></i>Status</label>
+        <select id="fStatus">
+          <option value="Aberto" selected>Aberto</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Finalizado">Finalizado</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-note-sticky me-1"></i>Observação</label>
+      <textarea id="fObservacao" rows="2" placeholder="Observações adicionais..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-camera me-1"></i>Foto (opcional)</label>
+      <div class="photo-upload-area" onclick="document.getElementById('fFoto').click()">
+        <i class="fa-solid fa-camera-retro"></i>
+        <span>Toque para tirar foto ou escolher da galeria</span>
+      </div>
+      <input type="file" id="fFoto" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(event)">
+      <img id="fFotoPreview" class="photo-preview" alt="Preview">
+      <button type="button" id="fFotoRemove" style="display:none;margin-top:6px;background:#ffebee;color:var(--aberto);border:none;border-radius:8px;padding:4px 12px;font-size:0.75rem;cursor:pointer;" onclick="removePhoto()">
+        <i class="fa-solid fa-trash me-1"></i>Remover foto
+      </button>
+    </div>
+
+    <button type="button" class="btn-primary-full" onclick="saveDemanda()">
+      <i class="fa-solid fa-floppy-disk me-2"></i>Salvar Demanda
+    </button>
+    <button type="button" class="btn-cancel-full" id="btnCancelarEdit" style="display:none" onclick="cancelEdit()">
+      Cancelar edição
+    </button>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button onclick="switchTab('dashboard')" id="nav-dashboard" class="active">
+    <i class="fa-solid fa-chart-pie"></i>
+    Dashboard
+  </button>
+  <button onclick="switchTab('demandas')" id="nav-demandas">
+    <i class="fa-solid fa-list-ul"></i>
+    Demandas
+  </button>
+  <button onclick="switchTab('nova')" id="nav-nova" class="btn-new-fab">
+    <i class="fa-solid fa-plus"></i>
+    Nova
+  </button>
+  <button onclick="switchTab('tabela')" id="nav-tabela">
+    <i class="fa-solid fa-table"></i>
+    Tabela
+  </button>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop-custom" id="detailModal" onclick="closeDetail(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header-custom">
+      <h2 id="detailTitle">Demanda #000</h2>
+      <button class="modal-close" onclick="closeDetailModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <div class="status-stepper">
+      <button class="step-btn" id="stepAberto" onclick="quickStatus('Aberto')">Aberto</button>
+      <button class="step-btn" id="stepAndamento" onclick="quickStatus('Em Andamento')">Andamento</button>
+      <button class="step-btn" id="stepFinalizado" onclick="quickStatus('Finalizado')">Finalizado</button>
+    </div>
+
+    <div id="detailBody"></div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn-action btn-edit" style="flex:1;padding:10px" onclick="editFromDetail()">
+        <i class="fa-solid fa-pen me-1"></i>Editar
+      </button>
+      <button class="btn-action btn-delete" style="padding:10px 14px" onclick="deleteFromDetail()">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="modal-backdrop-custom" id="deleteModal" onclick="closeDeleteModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()" style="max-height:auto;">
+    <div class="modal-header-custom">
+      <h2 style="color:var(--aberto)"><i class="fa-solid fa-triangle-exclamation me-2"></i>Excluir</h2>
+      <button class="modal-close" onclick="closeDeleteModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p style="font-size:0.9rem;color:#424242">Tem certeza que deseja excluir esta demanda? Esta ação não pode ser desfeita.</p>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-cancel-full" style="margin:0;flex:1" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn-action btn-delete" style="flex:1;padding:12px;font-size:0.9rem" onclick="confirmDelete()">
+        <i class="fa-solid fa-trash me-1"></i>Excluir
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────
+const STORAGE_KEY = 'gestao_demandas_v2';
+const API_KEY = 'grd_api_url';
+let demandas = [];
+let editingId = null;
+let detailId = null;
+let deleteTargetId = null;
+let charts = {};
+let apiUrl = localStorage.getItem(API_KEY) || '';
+
+function loadData() {
+  try { demandas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { demandas = []; }
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(demandas));
+}
+
+// ─── GOOGLE SHEETS API ───────────────────────────────────────────
+function setSyncStatus(status) {
+  const el = document.getElementById('syncStatusDot');
+  if (!el) return;
+  const map = {
+    ok:      { color: '#66bb6a', title: 'Sincronizado' },
+    syncing: { color: '#ffa726', title: 'Sincronizando...' },
+    error:   { color: '#ef5350', title: 'Erro na sincronização' },
+    offline: { color: '#9e9e9e', title: 'Sem conexão com Sheets' },
+  };
+  const s = map[status] || map.offline;
+  el.style.background = s.color;
+  el.title = s.title;
+}
+
+async function sheetsGet() {
+  if (!apiUrl) return null;
+  try {
+    const res = await fetch(apiUrl, { method: 'GET' });
+    const json = await res.json();
+    if (json.status === 'ok') return json.data;
+  } catch { setSyncStatus('error'); }
+  return null;
+}
+
+async function sheetsUpsert(demanda) {
+  if (!apiUrl) return;
+  const { foto, ...sem_foto } = demanda;
+  setSyncStatus('syncing');
+  try {
+    await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'upsert', demanda: sem_foto }),
+    });
+    setSyncStatus('ok');
+  } catch { setSyncStatus('error'); }
+}
+
+async function sheetsDelete(id) {
+  if (!apiUrl) return;
+  setSyncStatus('syncing');
+  try {
+    await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', id }),
+    });
+    setSyncStatus('ok');
+  } catch { setSyncStatus('error'); }
+}
+
+async function sheetsSyncAll(lista) {
+  if (!apiUrl) return;
+  const sem_foto = lista.map(({ foto, ...d }) => d);
+  setSyncStatus('syncing');
+  try {
+    await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'syncAll', demandas: sem_foto }),
+    });
+    setSyncStatus('ok');
+    showToast('Dados enviados ao Google Sheets!', 'success');
+  } catch { setSyncStatus('error'); showToast('Erro ao sincronizar com Sheets.', 'error'); }
+}
+
+async function sheetsCarregar() {
+  if (!apiUrl) { setSyncStatus('offline'); return; }
+  setSyncStatus('syncing');
+  const dados = await sheetsGet();
+  if (!dados) { setSyncStatus('error'); return; }
+
+  // Mescla: mantém fotos locais
+  const fotosLocais = {};
+  demandas.forEach(d => { if (d.foto) fotosLocais[d.id] = d.foto; });
+  demandas = dados.map(d => ({ ...d, foto: fotosLocais[d.id] || null }));
+  saveData();
+  setSyncStatus('ok');
+  updateDashboard();
+  renderList();
+  showToast('Dados carregados do Google Sheets!', 'success');
+}
+
+// Configurar URL do script
+function salvarApiUrl() {
+  const url = document.getElementById('inputApiUrl').value.trim();
+  if (!url) { showToast('Cole a URL do script.', 'error'); return; }
+  apiUrl = url;
+  localStorage.setItem(API_KEY, url);
+  document.getElementById('setupModal').classList.remove('show');
+  showToast('URL salva! Carregando dados...', 'success');
+  sheetsCarregar();
+}
+function removerApiUrl() {
+  apiUrl = '';
+  localStorage.removeItem(API_KEY);
+  document.getElementById('inputApiUrl').value = '';
+  setSyncStatus('offline');
+  showToast('Conexão com Sheets removida.', 'success');
+  document.getElementById('setupModal').classList.remove('show');
+}
+function openSetupModal() {
+  document.getElementById('inputApiUrl').value = apiUrl || '';
+  document.getElementById('syncModal').classList.remove('show');
+  document.getElementById('setupModal').classList.add('show');
+}
+function closeSetupModal(e) {
+  if (e && e.target !== document.getElementById('setupModal')) return;
+  document.getElementById('setupModal').classList.remove('show');
+}
+function nextNum() {
+  if (!demandas.length) return 1;
+  return Math.max(...demandas.map(d => d.num || 0)) + 1;
+}
+function getById(id) { return demandas.find(d => d.id === id); }
+
+// ─── TABS ────────────────────────────────────────────────────────
+// ─── FORM ────────────────────────────────────────────────────────
+function getTodayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+function initForm() {
+  document.getElementById('fData').value = getTodayStr();
+  document.getElementById('editId').value = '';
+  document.getElementById('fSolicitante').value = '';
+  document.getElementById('fSetor').value = '';
+  document.getElementById('fMaquina').value = '';
+  document.getElementById('fDescricao').value = '';
+  document.getElementById('fPrioridade').value = 'Média';
+  document.getElementById('fStatus').value = 'Aberto';
+  document.getElementById('fObservacao').value = '';
+  document.getElementById('fFotoPreview').style.display = 'none';
+  document.getElementById('fFotoPreview').src = '';
+  document.getElementById('fFotoRemove').style.display = 'none';
+  document.getElementById('fFoto').value = '';
+  document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-plus-circle me-2"></i>Nova Demanda';
+  document.getElementById('formNumLabel').textContent = '#' + String(nextNum()).padStart(3, '0');
+  document.getElementById('btnCancelarEdit').style.display = 'none';
+  editingId = null;
+  updateSetoresDatalist();
+}
+
+function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const preview = document.getElementById('fFotoPreview');
+    preview.src = ev.target.result;
+    preview.style.display = 'block';
+    document.getElementById('fFotoRemove').style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removePhoto() {
+  document.getElementById('fFoto').value = '';
+  document.getElementById('fFotoPreview').style.display = 'none';
+  document.getElementById('fFotoPreview').src = '';
+  document.getElementById('fFotoRemove').style.display = 'none';
+}
+
+function saveDemanda() {
+  const data = document.getElementById('fData').value;
+  const solicitante = document.getElementById('fSolicitante').value.trim();
+  const descricao = document.getElementById('fDescricao').value.trim();
+  if (!data || !solicitante || !descricao) {
+    showToast('Preencha os campos obrigatórios: Data, Solicitante e Descrição.', 'error');
+    return;
+  }
+  const fotoSrc = document.getElementById('fFotoPreview').src;
+  const foto = fotoSrc && document.getElementById('fFotoPreview').style.display !== 'none' ? fotoSrc : null;
+
+  if (editingId) {
+    const idx = demandas.findIndex(d => d.id === editingId);
+    if (idx !== -1) {
+      demandas[idx] = {
+        ...demandas[idx],
+        data, solicitante,
+        setor: document.getElementById('fSetor').value.trim(),
+        maquina: document.getElementById('fMaquina').value.trim(),
+        descricao,
+        prioridade: document.getElementById('fPrioridade').value,
+        status: document.getElementById('fStatus').value,
+        observacao: document.getElementById('fObservacao').value.trim(),
+        foto: foto || demandas[idx].foto,
+        atualizado: new Date().toISOString(),
+      };
+      if (demandas[idx].status === 'Finalizado' && !demandas[idx].finalizado) {
+        demandas[idx].finalizado = new Date().toISOString();
+      }
+    }
+    showToast('Demanda atualizada!', 'success');
+  } else {
+    const nova = {
+      id: Date.now().toString(),
+      num: nextNum(),
+      data, solicitante,
+      setor: document.getElementById('fSetor').value.trim(),
+      maquina: document.getElementById('fMaquina').value.trim(),
+      descricao,
+      prioridade: document.getElementById('fPrioridade').value,
+      status: document.getElementById('fStatus').value,
+      observacao: document.getElementById('fObservacao').value.trim(),
+      foto,
+      criado: new Date().toISOString(),
+      atualizado: null,
+      finalizado: null,
+    };
+    if (nova.status === 'Finalizado') nova.finalizado = nova.criado;
+    demandas.unshift(nova);
+    showToast('Demanda #' + String(nova.num).padStart(3,'0') + ' criada!', 'success');
+  }
+  saveData();
+  sheetsUpsert(editingId ? demandas.find(d => d.id === editingId) : demandas[0]);
+  initForm();
+  switchTab('demandas');
+}
+
+function cancelEdit() {
+  editingId = null;
+  initForm();
+  switchTab('demandas');
+}
+
+function loadEdit(id) {
+  const d = getById(id);
+  if (!d) return;
+  editingId = id;
+  document.getElementById('editId').value = id;
+  document.getElementById('fData').value = d.data;
+  document.getElementById('fSolicitante').value = d.solicitante;
+  document.getElementById('fSetor').value = d.setor || '';
+  document.getElementById('fMaquina').value = d.maquina || '';
+  document.getElementById('fDescricao').value = d.descricao;
+  document.getElementById('fPrioridade').value = d.prioridade;
+  document.getElementById('fStatus').value = d.status;
+  document.getElementById('fObservacao').value = d.observacao || '';
+  if (d.foto) {
+    document.getElementById('fFotoPreview').src = d.foto;
+    document.getElementById('fFotoPreview').style.display = 'block';
+    document.getElementById('fFotoRemove').style.display = 'inline-block';
+  }
+  document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-pen me-2"></i>Editar Demanda';
+  document.getElementById('formNumLabel').textContent = '#' + String(d.num).padStart(3, '0');
+  document.getElementById('btnCancelarEdit').style.display = 'block';
+  closeDetailModal();
+  switchTab('nova');
+  window.scrollTo(0, 0);
+}
+
+// ─── LIST ─────────────────────────────────────────────────────────
+function renderList() {
+  const search = (document.getElementById('filterSearch').value || '').toLowerCase();
+  const status = document.getElementById('filterStatus').value;
+  const prior = document.getElementById('filterPrior').value;
+
+  let filtered = demandas.filter(d => {
+    const matchSearch = !search || [d.descricao, d.solicitante, d.setor, d.maquina, d.observacao, '#'+String(d.num).padStart(3,'0')]
+      .some(v => (v||'').toLowerCase().includes(search));
+    const matchStatus = !status || d.status === status;
+    const matchPrior = !prior || d.prioridade === prior;
+    return matchSearch && matchStatus && matchPrior;
+  });
+
+  document.getElementById('listCount').textContent = filtered.length + ' demanda' + (filtered.length !== 1 ? 's' : '');
+
+  const container = document.getElementById('demandList');
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><div style="font-size:1rem;font-weight:700;margin-bottom:6px">Nenhuma demanda encontrada</div><div style="font-size:0.82rem">Crie uma nova demanda clicando em "+ Nova"</div></div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(d => {
+    const statusClass = d.status.replace(' ', '.');
+    const badgeClass = 'badge-' + d.status.replace(' ', '-');
+    const priorClass = 'prior-' + d.prioridade;
+    const badgePClass = 'badge-' + d.prioridade;
+    const dateStr = formatDate(d.data);
+    return `
+      <div class="demand-card status-${statusClass} ${priorClass}" onclick="openDetail('${d.id}')">
+        <div class="demand-photo-wrap">
+          <div style="flex:1">
+            <div class="demand-header">
+              <div>
+                <div class="demand-num">#${String(d.num).padStart(3,'0')} · ${dateStr}</div>
+                <div class="demand-title">${escHtml(d.descricao.substring(0,80))}${d.descricao.length>80?'...':''}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+                <span class="badge-status ${badgeClass}">${d.status}</span>
+                <span class="badge-prior ${badgePClass}">${d.prioridade}</span>
+              </div>
+            </div>
+            <div class="demand-meta">
+              ${d.solicitante ? `<span><i class="fa-solid fa-user"></i>${escHtml(d.solicitante)}</span>` : ''}
+              ${d.setor ? `<span><i class="fa-solid fa-building"></i>${escHtml(d.setor)}</span>` : ''}
+              ${d.maquina ? `<span><i class="fa-solid fa-gears"></i>${escHtml(d.maquina)}</span>` : ''}
+            </div>
+          </div>
+          ${d.foto ? `<img src="${d.foto}" class="demand-photo" alt="foto">` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────
+function openDetail(id) {
+  detailId = id;
+  const d = getById(id);
+  if (!d) return;
+  document.getElementById('detailTitle').textContent = 'Demanda #' + String(d.num).padStart(3,'0');
+  updateStepBtns(d.status);
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-row"><div class="detail-label">Descrição</div><div class="detail-value" style="font-weight:600">${escHtml(d.descricao)}</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="detail-row"><div class="detail-label">Data</div><div class="detail-value">${formatDate(d.data)}</div></div>
+      <div class="detail-row"><div class="detail-label">Solicitante</div><div class="detail-value">${escHtml(d.solicitante||'-')}</div></div>
+      <div class="detail-row"><div class="detail-label">Setor</div><div class="detail-value">${escHtml(d.setor||'-')}</div></div>
+      <div class="detail-row"><div class="detail-label">Máquina</div><div class="detail-value">${escHtml(d.maquina||'-')}</div></div>
+      <div class="detail-row"><div class="detail-label">Prioridade</div><div class="detail-value"><span class="badge-prior badge-${d.prioridade}">${d.prioridade}</span></div></div>
+      <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value"><span class="badge-status badge-${d.status.replace(' ','-')}">${d.status}</span></div></div>
+    </div>
+    ${d.observacao ? `<div class="detail-row"><div class="detail-label">Observação</div><div class="detail-value">${escHtml(d.observacao)}</div></div>` : ''}
+    ${d.finalizado ? `<div class="detail-row"><div class="detail-label">Finalizado em</div><div class="detail-value">${formatDatetime(d.finalizado)}</div></div>` : ''}
+    ${d.foto ? `<div class="detail-row"><div class="detail-label">Foto</div><img src="${d.foto}" class="detail-photo"></div>` : ''}
+  `;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function updateStepBtns(status) {
+  ['stepAberto','stepAndamento','stepFinalizado'].forEach(id => {
+    document.getElementById(id).className = 'step-btn';
+  });
+  if (status === 'Aberto') document.getElementById('stepAberto').classList.add('active-Aberto');
+  if (status === 'Em Andamento') document.getElementById('stepAndamento').classList.add('active-Andamento');
+  if (status === 'Finalizado') document.getElementById('stepFinalizado').classList.add('active-Finalizado');
+}
+
+function quickStatus(newStatus) {
+  if (!detailId) return;
+  const idx = demandas.findIndex(d => d.id === detailId);
+  if (idx === -1) return;
+  demandas[idx].status = newStatus;
+  demandas[idx].atualizado = new Date().toISOString();
+  if (newStatus === 'Finalizado' && !demandas[idx].finalizado) {
+    demandas[idx].finalizado = new Date().toISOString();
+  }
+  saveData();
+  sheetsUpsert(demandas[idx]);
+  updateStepBtns(newStatus);
+  openDetail(detailId);
+  showToast('Status atualizado: ' + newStatus, 'success');
+}
+
+function closeDetail(e) {
+  if (e && e.target !== document.getElementById('detailModal')) return;
+  closeDetailModal();
+}
+function closeDetailModal() {
+  document.getElementById('detailModal').classList.remove('show');
+  renderList();
+  updateDashboard();
+}
+
+function editFromDetail() { loadEdit(detailId); }
+
+function deleteFromDetail() {
+  deleteTargetId = detailId;
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeDeleteModal(e) {
+  if (e && e.target !== document.getElementById('deleteModal')) return;
+  document.getElementById('deleteModal').classList.remove('show');
+}
+function confirmDelete() {
+  sheetsDelete(deleteTargetId);
+  demandas = demandas.filter(d => d.id !== deleteTargetId);
+  saveData();
+  document.getElementById('deleteModal').classList.remove('show');
+  closeDetailModal();
+  showToast('Demanda excluída.', 'success');
+  renderList();
+  updateDashboard();
+}
+
+// ─── EXCEL EXPORT ─────────────────────────────────────────────────
+function exportExcel() {
+  if (!demandas.length) { showToast('Nenhuma demanda para exportar.', 'error'); return; }
+  const rows = demandas.map(d => ({
+    'Nº': '#' + String(d.num).padStart(3,'0'),
+    'Data': formatDate(d.data),
+    'Solicitante': d.solicitante || '',
+    'Setor': d.setor || '',
+    'Máquina': d.maquina || '',
+    'Descrição': d.descricao || '',
+    'Prioridade': d.prioridade || '',
+    'Status': d.status || '',
+    'Observação': d.observacao || '',
+    'Criado em': d.criado ? formatDatetime(d.criado) : '',
+    'Finalizado em': d.finalizado ? formatDatetime(d.finalizado) : '',
+    'Foto': d.foto ? 'Sim' : 'Não',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Column widths
+  ws['!cols'] = [
+    {wch:6},{wch:12},{wch:20},{wch:16},{wch:18},{wch:45},
+    {wch:12},{wch:16},{wch:30},{wch:18},{wch:18},{wch:6}
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Demandas');
+
+  // KPI sheet
+  const total = demandas.length;
+  const aberto = demandas.filter(d => d.status === 'Aberto').length;
+  const andamento = demandas.filter(d => d.status === 'Em Andamento').length;
+  const finalizado = demandas.filter(d => d.status === 'Finalizado').length;
+  const kpiRows = [
+    {'Indicador': 'Total de Demandas', 'Valor': total},
+    {'Indicador': 'Em Aberto', 'Valor': aberto},
+    {'Indicador': 'Em Andamento', 'Valor': andamento},
+    {'Indicador': 'Finalizadas', 'Valor': finalizado},
+    {'Indicador': 'Taxa de Conclusão', 'Valor': total ? (Math.round(finalizado/total*100) + '%') : '0%'},
+    {'Indicador': 'Alta Prioridade', 'Valor': demandas.filter(d=>d.prioridade==='Alta').length},
+    {'Indicador': 'Média Prioridade', 'Valor': demandas.filter(d=>d.prioridade==='Média').length},
+    {'Indicador': 'Baixa Prioridade', 'Valor': demandas.filter(d=>d.prioridade==='Baixa').length},
+  ];
+  const ws2 = XLSX.utils.json_to_sheet(kpiRows);
+  ws2['!cols'] = [{wch:25},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'KPIs');
+
+  const date = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Demandas_${date}.xlsx`);
+  showToast('Exportado com sucesso!', 'success');
+}
+
+// ─── SYNC MODAL ──────────────────────────────────────────────────
+function openSyncModal() {
+  document.getElementById('syncModal').classList.add('show');
+}
+function closeSyncModal(e) {
+  if (e && e.target !== document.getElementById('syncModal')) return;
+  document.getElementById('syncModal').classList.remove('show');
+}
+
+// ─── EXPORT JSON ─────────────────────────────────────────────────
+function exportJSON() {
+  if (!demandas.length) { showToast('Nenhuma demanda para exportar.', 'error'); return; }
+  const blob = new Blob([JSON.stringify(demandas, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = `backup_demandas_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup exportado com sucesso!', 'success');
+}
+
+// ─── IMPORT JSON ─────────────────────────────────────────────────
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const dados = JSON.parse(e.target.result);
+      if (!Array.isArray(dados)) throw new Error('Formato inválido');
+      demandas = dados;
+      saveData();
+      document.getElementById('syncModal').classList.remove('show');
+      updateDashboard();
+      renderList();
+      showToast(dados.length + ' demandas importadas com sucesso!', 'success');
+    } catch {
+      showToast('Arquivo inválido. Use um backup gerado por este app.', 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '-';
+  const clean = String(str).substring(0, 10); // pega só YYYY-MM-DD
+  const [y,m,d] = clean.split('-');
+  if (!y || !m || !d) return str;
+  return `${d}/${m}/${y}`;
+}
+function formatDatetime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toastContainer');
+  const div = document.createElement('div');
+  div.className = `toast-item toast-${type}`;
+  div.innerHTML = `<i class="fa-solid fa-${type==='success'?'circle-check':'circle-exclamation'}"></i>${msg}`;
+  c.appendChild(div);
+  setTimeout(() => { div.style.opacity='0'; div.style.transform='translateX(60px)'; div.style.transition='all 0.3s'; setTimeout(()=>div.remove(),300); }, 2500);
+}
+function updateSetoresDatalist() {
+  const setores = [...new Set(demandas.map(d => d.setor).filter(Boolean))];
+  const dl = document.getElementById('setoresDatalist');
+  dl.innerHTML = setores.map(s => `<option value="${escHtml(s)}">`).join('');
+}
+
+// ─── DARK MODE ───────────────────────────────────────────────────
+function toggleDarkMode() {
+  const dark = document.body.classList.toggle('dark');
+  localStorage.setItem('darkMode', dark ? '1' : '0');
+  document.getElementById('btnDark').innerHTML = dark
+    ? '<i class="fa-solid fa-sun"></i>'
+    : '<i class="fa-solid fa-moon"></i>';
+  updateDashboard();
+}
+function initDarkMode() {
+  if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark');
+    document.getElementById('btnDark').innerHTML = '<i class="fa-solid fa-sun"></i>';
+  }
+}
+
+// ─── PERÍODO DASHBOARD ────────────────────────────────────────────
+let periodoAtivo = 'tudo';
+function setPeriodo(p, btn) {
+  periodoAtivo = p;
+  document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updateDashboard();
+}
+function filtrarPorPeriodo(lista) {
+  if (periodoAtivo === 'tudo') return lista;
+  const now = new Date();
+  return lista.filter(d => {
+    const dt = new Date(d.criado || d.data);
+    if (periodoAtivo === 'semana') {
+      const ini = new Date(now); ini.setDate(now.getDate() - now.getDay());
+      ini.setHours(0,0,0,0);
+      return dt >= ini;
+    }
+    if (periodoAtivo === 'mes') {
+      return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear();
+    }
+    if (periodoAtivo === 'trimestre') {
+      const mesIni = Math.floor(now.getMonth() / 3) * 3;
+      const ini = new Date(now.getFullYear(), mesIni, 1);
+      return dt >= ini;
+    }
+    return true;
+  });
+}
+
+// ─── ATRASADOS ────────────────────────────────────────────────────
+function isAtrasado(d) {
+  if (!d.prazo || d.status === 'Finalizado') return false;
+  return new Date(d.prazo) < new Date();
+}
+
+// ─── TABELA ──────────────────────────────────────────────────────
+let tabelaSort = { col: 'num', asc: false };
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content-area').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'dashboard') updateDashboard();
+  if (tab === 'demandas') renderList();
+  if (tab === 'tabela') renderTabela();
+  window.scrollTo(0, 0);
+}
+function sortTabela(col) {
+  if (tabelaSort.col === col) tabelaSort.asc = !tabelaSort.asc;
+  else { tabelaSort.col = col; tabelaSort.asc = true; }
+  renderTabela();
+}
+function renderTabela() {
+  const search = (document.getElementById('tabelaSearch').value || '').toLowerCase();
+  const status = document.getElementById('tabelaStatus').value;
+  const prior  = document.getElementById('tabelaPrior').value;
+
+  let filtered = demandas.filter(d => {
+    const matchSearch = !search || [d.descricao, d.solicitante, d.setor, d.maquina, d.observacao, '#'+String(d.num).padStart(3,'0')]
+      .some(v => (v||'').toLowerCase().includes(search));
+    const matchStatus = !status || d.status === status;
+    const matchPrior  = !prior  || d.prioridade === prior;
+    return matchSearch && matchStatus && matchPrior;
+  });
+
+  filtered.sort((a, b) => {
+    let va = a[tabelaSort.col] ?? 0;
+    let vb = b[tabelaSort.col] ?? 0;
+    if (tabelaSort.col === 'num') { va = Number(va); vb = Number(vb); }
+    if (va < vb) return tabelaSort.asc ? -1 : 1;
+    if (va > vb) return tabelaSort.asc ? 1 : -1;
+    return 0;
+  });
+
+  const priorColor  = { Alta: '#ef5350', Média: '#ffa726', Baixa: '#66bb6a' };
+  const statusColor = { Aberto: '#ef5350', 'Em Andamento': '#ffa726', Finalizado: '#66bb6a' };
+
+  // células editáveis inline
+  document.getElementById('tabelaBody').innerHTML = filtered.map(d => `
+    <tr data-id="${d.id}">
+      <td style="font-weight:700;color:var(--primary);white-space:nowrap">#${String(d.num).padStart(3,'0')}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="data" data-tipo="date" style="white-space:nowrap">${formatDate(d.data)}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="solicitante" data-tipo="text">${escHtml(d.solicitante||'')}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="setor" data-tipo="text">${escHtml(d.setor||'')}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="maquina" data-tipo="text">${escHtml(d.maquina||'')}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="descricao" data-tipo="text" style="max-width:200px">${escHtml(d.descricao||'')}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="prioridade" data-tipo="select" data-opcoes="Alta,Média,Baixa">
+        <span style="color:${priorColor[d.prioridade]||'#9e9e9e'};font-weight:700;">${d.prioridade||'-'}</span>
+      </td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="status" data-tipo="select" data-opcoes="Aberto,Em Andamento,Finalizado">
+        <span style="color:${statusColor[d.status]||'#9e9e9e'};font-weight:700;">${d.status||'-'}</span>
+      </td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="observacao" data-tipo="text" style="max-width:150px">${escHtml(d.observacao||'')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="9" style="text-align:center;padding:24px;color:#9e9e9e">Nenhuma demanda encontrada</td></tr>';
+
+  document.getElementById('tabelaCount').textContent = filtered.length + ' demanda' + (filtered.length !== 1 ? 's' : '') + ' encontrada' + (filtered.length !== 1 ? 's' : '');
+}
+
+function iniciarEdicaoCel(cel) {
+  console.log('[GRD] iniciarEdicaoCel chamado, campo:', cel.dataset.campo, 'id:', cel.dataset.id);
+  if (cel.querySelector('input, select, textarea')) return; // já editando
+  const id     = cel.dataset.id;
+  const campo  = cel.dataset.campo;
+  const tipo   = cel.dataset.tipo;
+  const opcoes = cel.dataset.opcoes ? cel.dataset.opcoes.split(',') : [];
+  const d      = getById(id);
+  if (!d) return;
+
+  const valorAtual = d[campo] || '';
+  const largura = cel.offsetWidth;
+  cel.dataset.original = cel.innerHTML;
+
+  let input;
+  if (tipo === 'select') {
+    input = document.createElement('select');
+    input.style.cssText = `width:100%;border:2px solid var(--accent);border-radius:6px;padding:4px 6px;font-size:0.8rem;background:white;color:#212121;outline:none;`;
+    opcoes.forEach(op => {
+      const opt = document.createElement('option');
+      opt.value = op; opt.textContent = op;
+      if (op === valorAtual) opt.selected = true;
+      input.appendChild(opt);
+    });
+  } else if (campo === 'descricao' || campo === 'observacao') {
+    input = document.createElement('textarea');
+    input.rows = 2;
+    input.style.cssText = `width:100%;border:2px solid var(--accent);border-radius:6px;padding:4px 6px;font-size:0.8rem;resize:vertical;outline:none;min-width:180px;`;
+    input.value = valorAtual;
+  } else {
+    input = document.createElement('input');
+    input.type = tipo === 'date' ? 'date' : 'text';
+    input.style.cssText = `width:100%;border:2px solid var(--accent);border-radius:6px;padding:4px 6px;font-size:0.8rem;outline:none;min-width:100px;`;
+    input.value = valorAtual;
+  }
+
+  cel.innerHTML = '';
+  cel.appendChild(input);
+  input.focus();
+  if (input.select && tipo !== 'date') input.select();
+
+  // confirma ao sair ou Enter
+  function confirmar() {
+    const novoValor = input.value.trim();
+    const idx = demandas.findIndex(x => x.id === id);
+    if (idx !== -1 && novoValor !== valorAtual) {
+      demandas[idx][campo] = novoValor;
+      demandas[idx].atualizado = new Date().toISOString();
+      if (campo === 'status' && novoValor === 'Finalizado' && !demandas[idx].finalizado) {
+        demandas[idx].finalizado = new Date().toISOString();
+      }
+      saveData();
+      sheetsUpsert(demandas[idx]);
+      showToast('Célula atualizada!', 'success');
+    }
+    renderTabela();
+  }
+
+  function cancelar() {
+    cel.innerHTML = cel.dataset.original;
+  }
+
+  input.addEventListener('blur', confirmar);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && tipo !== 'select' && campo !== 'descricao' && campo !== 'observacao') {
+      e.preventDefault(); confirmar();
+    }
+    if (e.key === 'Escape') { input.removeEventListener('blur', confirmar); cancelar(); }
+  });
+  if (tipo === 'select') {
+    input.addEventListener('change', confirmar);
+  }
+}
+
+// ─── TEMPO MÉDIO ─────────────────────────────────────────────────
+function calcTempoMedio(lista) {
+  const finalizadas = lista.filter(d => d.status === 'Finalizado' && d.criado && d.finalizado);
+  if (!finalizadas.length) return { media: 0, porPrioridade: {} };
+  const total = finalizadas.reduce((acc, d) => {
+    const dias = (new Date(d.finalizado) - new Date(d.criado)) / (1000*60*60*24);
+    return acc + dias;
+  }, 0);
+  const porPrioridade = {};
+  ['Alta','Média','Baixa'].forEach(p => {
+    const grupo = finalizadas.filter(d => d.prioridade === p);
+    if (grupo.length) {
+      const s = grupo.reduce((a,d) => a + (new Date(d.finalizado)-new Date(d.criado))/(1000*60*60*24), 0);
+      porPrioridade[p] = +(s/grupo.length).toFixed(1);
+    } else {
+      porPrioridade[p] = 0;
+    }
+  });
+  return { media: +(total/finalizadas.length).toFixed(1), porPrioridade, total: finalizadas.length };
+}
+
+// ─── UPDATE DASHBOARD (override) ─────────────────────────────────
+function updateDashboard() {
+  const filtrados = filtrarPorPeriodo(demandas);
+  const total      = filtrados.length;
+  const aberto     = filtrados.filter(d => d.status === 'Aberto').length;
+  const andamento  = filtrados.filter(d => d.status === 'Em Andamento').length;
+  const finalizado = filtrados.filter(d => d.status === 'Finalizado').length;
+  const alta  = filtrados.filter(d => d.prioridade === 'Alta').length;
+  const media = filtrados.filter(d => d.prioridade === 'Média').length;
+  const baixa = filtrados.filter(d => d.prioridade === 'Baixa').length;
+  const pct   = total ? Math.round((finalizado / total) * 100) : 0;
+
+  document.getElementById('kpiTotal').textContent      = total;
+  document.getElementById('kpiTotalSub').textContent   = total === 1 ? '1 demanda registrada' : total + ' demandas registradas';
+  document.getElementById('kpiAberto').textContent     = aberto;
+  document.getElementById('kpiAbertoPct').textContent  = total ? Math.round(aberto/total*100) + '% do total' : '0%';
+  document.getElementById('kpiAndamento').textContent  = andamento;
+  document.getElementById('kpiAndamentoPct').textContent = total ? Math.round(andamento/total*100) + '% do total' : '0%';
+  document.getElementById('kpiFinalizado').textContent = finalizado;
+  document.getElementById('kpiFinalizadoPct').textContent = pct + '% concluído';
+  document.getElementById('txConclusao').textContent   = pct + '%';
+  document.getElementById('progressFill').style.width  = pct + '%';
+  document.getElementById('kpiAltaCount').textContent  = 'Alta: '  + alta;
+  document.getElementById('kpiMediaCount').textContent = 'Média: ' + media;
+  document.getElementById('kpiBaixaCount').textContent = 'Baixa: ' + baixa;
+  document.getElementById('navSubtitle').textContent   = total + ' demandas · ' + pct + '% concluído';
+
+  drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados);
+}
+
+function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados) {
+  const isDark = document.body.classList.contains('dark');
+  const textColor = isDark ? '#9e9e9e' : '#757575';
+
+  // STATUS DONUT
+  const ctxStatus = document.getElementById('chartStatus').getContext('2d');
+  if (charts.status) charts.status.destroy();
+  charts.status = new Chart(ctxStatus, {
+    type: 'doughnut',
+    data: {
+      labels: ['Aberto','Andamento','Finalizado'],
+      datasets: [{ data: [aberto, andamento, finalizado], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderWidth: 2, borderColor: isDark ? '#1e1e1e' : '#fff' }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } } }, cutout: '60%' }
+  });
+
+  // PRIORIDADE BAR
+  const ctxPrior = document.getElementById('chartPrioridade').getContext('2d');
+  if (charts.prioridade) charts.prioridade.destroy();
+  charts.prioridade = new Chart(ctxPrior, {
+    type: 'bar',
+    data: {
+      labels: ['Alta','Média','Baixa'],
+      datasets: [{ data: [alta, media, baixa], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+  });
+
+  // EVOLUÇÃO LINHA
+  const months = [];
+  const criadosByMonth = {}, finalizadosByMonth = {};
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    months.push({ key, label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }) });
+    criadosByMonth[key] = 0; finalizadosByMonth[key] = 0;
+  }
+  filtrados.forEach(d => {
+    const ck = (d.criado || d.data || '').substring(0,7);
+    if (criadosByMonth.hasOwnProperty(ck)) criadosByMonth[ck]++;
+    if (d.finalizado) { const fk = d.finalizado.substring(0,7); if (finalizadosByMonth.hasOwnProperty(fk)) finalizadosByMonth[fk]++; }
+  });
+  const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
+  if (charts.evolucao) charts.evolucao.destroy();
+  charts.evolucao = new Chart(ctxEvolucao, {
+    type: 'line',
+    data: {
+      labels: months.map(m => m.label),
+      datasets: [
+        { label: 'Criadas',    data: months.map(m => criadosByMonth[m.key]),    borderColor: '#42a5f5', backgroundColor: 'rgba(66,165,245,0.15)',  tension: 0.4, fill: true, pointRadius: 4 },
+        { label: 'Finalizadas',data: months.map(m => finalizadosByMonth[m.key]),borderColor: '#66bb6a', backgroundColor: 'rgba(102,187,106,0.15)', tension: 0.4, fill: true, pointRadius: 4 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+  });
+
+  // SETORES
+  const setorCount = {};
+  filtrados.forEach(d => { if (d.setor) setorCount[d.setor] = (setorCount[d.setor]||0)+1; });
+  const sorted = Object.entries(setorCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const ctxSetor = document.getElementById('chartSetor').getContext('2d');
+  if (charts.setor) charts.setor.destroy();
+  const alturaSetor = Math.max(120, Math.min(sorted.length * 40, 220));
+  charts.setor = new Chart(ctxSetor, {
+    type: 'bar',
+    data: { labels: sorted.map(s => s[0]), datasets: [{ label: 'Demandas', data: sorted.map(s => s[1]), backgroundColor: '#42a5f5', borderRadius: 6, barThickness: 22 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+      },
+      scales: {
+        x: { beginAtZero: true, max: Math.max(...sorted.map(s=>s[1])) + 1, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+        y: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
+      },
+      animation: { onComplete: function() {
+        const ctx2 = this.ctx;
+        ctx2.font = 'bold 11px Segoe UI';
+        ctx2.fillStyle = textColor;
+        ctx2.textAlign = 'left';
+        ctx2.textBaseline = 'middle';
+        this.data.datasets[0].data.forEach((val, i) => {
+          const meta = this.getDatasetMeta(0);
+          const bar = meta.data[i];
+          if (bar) ctx2.fillText(' ' + val + (val === 1 ? ' demanda' : ' demandas'), bar.x, bar.y);
+        });
+      }}
+    }
+  });
+  ctxSetor.canvas.style.height = alturaSetor + 'px';
+
+  // TEMPO MÉDIO
+  const tm = calcTempoMedio(filtrados);
+  const ctxTempo = document.getElementById('chartTempo').getContext('2d');
+  if (charts.tempo) charts.tempo.destroy();
+  charts.tempo = new Chart(ctxTempo, {
+    type: 'bar',
+    data: {
+      labels: ['Alta','Média','Baixa'],
+      datasets: [{ label: 'Dias até finalizar', data: [tm.porPrioridade['Alta']||0, tm.porPrioridade['Média']||0, tm.porPrioridade['Baixa']||0], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+  });
+  document.getElementById('tempoMedioInfo').textContent = tm.total
+    ? `Média geral: ${tm.media} dias (baseado em ${tm.total} demanda${tm.total!==1?'s':''} finalizada${tm.total!==1?'s':''})`
+    : 'Ainda sem demandas finalizadas para calcular.';
+
+  // DESTAQUE ATRASADOS na lista
+  document.querySelectorAll('.demand-card').forEach(card => {
+    const id = card.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+    if (!id) return;
+    const d = getById(id);
+    if (d && isAtrasado(d)) card.classList.add('atrasado');
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+// Edição inline via event delegation (capture=true = mais confiável)
+document.addEventListener('click', function(e) {
+  console.log('[GRD] click em:', e.target.tagName, '|', e.target.className);
+  var cel = e.target.closest('td.cel-edit');
+  console.log('[GRD] cel encontrado:', cel ? cel.dataset.campo : 'nenhum');
+  if (cel && !cel.querySelector('input,select,textarea')) {
+    console.log('[GRD] chamando iniciarEdicaoCel para campo:', cel.dataset.campo);
+    iniciarEdicaoCel(cel);
+  }
+}, true);
+
+loadData();
+initDarkMode();
+initForm();
+updateDashboard();
+if (apiUrl) {
+  setSyncStatus('syncing');
+  sheetsCarregar();
+} else {
+  setSyncStatus('offline');
+}
+</script>
+</body>
+</html>
