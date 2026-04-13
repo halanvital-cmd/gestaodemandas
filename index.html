@@ -1977,15 +1977,12 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
 
 // ─── INIT ─────────────────────────────────────────────────────────
 // Edição inline via event delegation — funciona em PC e celular
-function handleCelClick(e) {
+document.addEventListener('click', function(e) {
   var cel = e.target.closest('td.cel-edit');
   if (cel && !cel.querySelector('input,select,textarea')) {
-    e.preventDefault();
     iniciarEdicaoCel(cel);
   }
-}
-document.addEventListener('click', handleCelClick, true);
-document.addEventListener('touchend', handleCelClick, { passive: false });
+});
 
 loadData();
 initDarkMode();
