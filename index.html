@@ -1216,7 +1216,7 @@ function nextNum() {
   if (!demandas.length) return 1;
   return Math.max(...demandas.map(d => d.num || 0)) + 1;
 }
-function getById(id) { return demandas.find(d => d.id === id); }
+function getById(id) { return demandas.find(d => String(d.id) === String(id)); }
 
 // ─── TABS ────────────────────────────────────────────────────────
 // ─── FORM ────────────────────────────────────────────────────────
@@ -1734,7 +1734,6 @@ function renderTabela() {
 }
 
 function iniciarEdicaoCel(cel) {
-  console.log('[GRD] iniciarEdicaoCel chamado, campo:', cel.dataset.campo, 'id:', cel.dataset.id);
   if (cel.querySelector('input, select, textarea')) return; // já editando
   const id     = cel.dataset.id;
   const campo  = cel.dataset.campo;
@@ -1777,7 +1776,7 @@ function iniciarEdicaoCel(cel) {
   // confirma ao sair ou Enter
   function confirmar() {
     const novoValor = input.value.trim();
-    const idx = demandas.findIndex(x => x.id === id);
+    const idx = demandas.findIndex(x => String(x.id) === String(id));
     if (idx !== -1 && novoValor !== valorAtual) {
       demandas[idx][campo] = novoValor;
       demandas[idx].atualizado = new Date().toISOString();
@@ -1977,16 +1976,16 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────
-// Edição inline via event delegation (capture=true = mais confiável)
-document.addEventListener('click', function(e) {
-  console.log('[GRD] click em:', e.target.tagName, '|', e.target.className);
+// Edição inline via event delegation — funciona em PC e celular
+function handleCelClick(e) {
   var cel = e.target.closest('td.cel-edit');
-  console.log('[GRD] cel encontrado:', cel ? cel.dataset.campo : 'nenhum');
   if (cel && !cel.querySelector('input,select,textarea')) {
-    console.log('[GRD] chamando iniciarEdicaoCel para campo:', cel.dataset.campo);
+    e.preventDefault();
     iniciarEdicaoCel(cel);
   }
-}, true);
+}
+document.addEventListener('click', handleCelClick, true);
+document.addEventListener('touchend', handleCelClick, { passive: false });
 
 loadData();
 initDarkMode();
