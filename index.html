@@ -477,7 +477,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     -webkit-overflow-scrolling: touch;
   }
-  .tabela-wrap table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 680px; }
+  .tabela-wrap table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 780px; }
   .tabela-wrap th { background: var(--primary); color: white; padding: 10px 12px; text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.4px; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
   .tabela-wrap td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
   .tabela-wrap tr:last-child td { border-bottom: none; }
@@ -575,6 +575,13 @@
   .periodo-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
   body.dark .periodo-btn { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
   body.dark .periodo-btn.active { background: var(--primary); color: white; }
+
+  /* PRAZO BADGES */
+  .badge-prazo { font-size:0.65rem; padding:2px 8px; border-radius:20px; font-weight:700; display:inline-block; margin-top:3px; }
+  .badge-prazo.atrasado { background:#b71c1c; color:white; animation: pulseBorder 1s ease-in-out infinite; }
+  .badge-prazo.vencehoje { background:#e53935; color:white; }
+  .badge-prazo.vencendo { background:#ff8f00; color:white; }
+  .badge-prazo.ok { background:#e3f2fd; color:#1565c0; }
 </style>
 </head>
 <body>
@@ -924,6 +931,7 @@ function ok(data) {
           <th>Descrição</th>
           <th onclick="sortTabela('prioridade')" style="cursor:pointer">Prior. ↕</th>
           <th onclick="sortTabela('status')" style="cursor:pointer">Status ↕</th>
+          <th>Prazo</th>
           <th>Observação</th>
         </tr>
       </thead>
@@ -1015,6 +1023,11 @@ function ok(data) {
     </div>
 
     <div class="form-group">
+      <label><i class="fa-solid fa-calendar-check me-1"></i>Data Prazo</label>
+      <input type="date" id="fPrazo">
+    </div>
+
+    <div class="form-group">
       <label><i class="fa-solid fa-camera me-1"></i>Foto (opcional)</label>
       <div class="photo-upload-area" onclick="document.getElementById('fFoto').click()">
         <i class="fa-solid fa-camera-retro"></i>
@@ -1085,6 +1098,10 @@ function ok(data) {
         </div>
       </div>
       <div>
+        <label style="font-size:0.78rem;font-weight:700;color:var(--primary);display:block;margin-bottom:4px;">Data Prazo</label>
+        <input id="rPrazo" type="date" style="width:100%;border:2px solid #e0e0e0;border-radius:8px;padding:8px 10px;font-size:0.88rem;outline:none;transition:border 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e0e0e0'">
+      </div>
+      <div>
         <label style="font-size:0.78rem;font-weight:700;color:var(--primary);display:block;margin-bottom:6px;">Prioridade</label>
         <div style="display:flex;gap:8px;">
           <button onclick="setPriorRapida('Alta')" id="rPriorAlta" class="prior-btn" style="flex:1;padding:8px;border-radius:8px;border:2px solid #ef5350;background:#ffebee;color:#ef5350;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;">Alta</button>
@@ -1115,6 +1132,15 @@ function ok(data) {
     </div>
 
     <div id="detailBody"></div>
+
+    <div id="historicoSection" style="margin-top:14px;">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--primary);margin-bottom:6px;"><i class="fa-solid fa-clock-rotate-left me-1"></i>HISTÓRICO</div>
+      <div id="historicoLista" style="max-height:150px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <input id="novoComentario" type="text" placeholder="Registrar atualização..." style="flex:1;border:2px solid #e0e0e0;border-radius:8px;padding:7px 10px;font-size:0.82rem;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='#e0e0e0'">
+        <button onclick="adicionarComentario()" style="padding:7px 14px;background:var(--primary);color:white;border:none;border-radius:8px;font-size:0.82rem;cursor:pointer;white-space:nowrap;"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>
 
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button class="btn-action btn-edit" style="flex:1;padding:10px" onclick="editFromDetail()">
@@ -1293,6 +1319,7 @@ function initForm() {
   document.getElementById('fPrioridade').value = 'Média';
   document.getElementById('fStatus').value = 'Aberto';
   document.getElementById('fObservacao').value = '';
+  document.getElementById('fPrazo').value = '';
   document.getElementById('fFotoPreview').style.display = 'none';
   document.getElementById('fFotoPreview').src = '';
   document.getElementById('fFotoRemove').style.display = 'none';
@@ -1347,6 +1374,7 @@ function saveDemanda() {
         prioridade: document.getElementById('fPrioridade').value,
         status: document.getElementById('fStatus').value,
         observacao: document.getElementById('fObservacao').value.trim(),
+        prazo: document.getElementById('fPrazo').value || null,
         foto: foto || demandas[idx].foto,
         atualizado: new Date().toISOString(),
       };
@@ -1366,10 +1394,12 @@ function saveDemanda() {
       prioridade: document.getElementById('fPrioridade').value,
       status: document.getElementById('fStatus').value,
       observacao: document.getElementById('fObservacao').value.trim(),
+      prazo: document.getElementById('fPrazo').value || null,
       foto,
       criado: new Date().toISOString(),
       atualizado: null,
       finalizado: null,
+      historico: [],
     };
     if (nova.status === 'Finalizado') nova.finalizado = nova.criado;
     demandas.unshift(nova);
@@ -1400,6 +1430,7 @@ function loadEdit(id) {
   document.getElementById('fPrioridade').value = d.prioridade;
   document.getElementById('fStatus').value = d.status;
   document.getElementById('fObservacao').value = d.observacao || '';
+  document.getElementById('fPrazo').value = d.prazo || '';
   if (d.foto) {
     document.getElementById('fFotoPreview').src = d.foto;
     document.getElementById('fFotoPreview').style.display = 'block';
@@ -1441,6 +1472,14 @@ function renderList() {
     const priorClass = 'prior-' + d.prioridade;
     const badgePClass = 'badge-' + d.prioridade;
     const dateStr = formatDate(d.data);
+    const dias = getDiasAtraso(d);
+    const prazoLabel = d.prazo ? formatDate(d.prazo) : '';
+    const prazoHtml = dias !== null ? (
+      dias < 0 ? `<span class="badge-prazo atrasado"><i class="fa-solid fa-circle-exclamation me-1"></i>Atrasado ${Math.abs(dias)}d</span>` :
+      dias === 0 ? `<span class="badge-prazo vencehoje"><i class="fa-solid fa-clock me-1"></i>Vence hoje</span>` :
+      dias <= 3 ? `<span class="badge-prazo vencendo"><i class="fa-solid fa-hourglass-half me-1"></i>${dias}d</span>` :
+      `<span class="badge-prazo ok"><i class="fa-solid fa-calendar me-1"></i>${prazoLabel}</span>`
+    ) : '';
     return `
       <div class="demand-card status-${statusClass} ${priorClass}" onclick="openDetail('${d.id}')">
         <div class="demand-photo-wrap">
@@ -1453,6 +1492,7 @@ function renderList() {
               <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
                 <span class="badge-status ${badgeClass}">${d.status}</span>
                 <span class="badge-prior ${badgePClass}">${d.prioridade}</span>
+                ${prazoHtml}
               </div>
             </div>
             <div class="demand-meta">
@@ -1484,10 +1524,12 @@ function openDetail(id) {
       <div class="detail-row"><div class="detail-label">Prioridade</div><div class="detail-value"><span class="badge-prior badge-${d.prioridade}">${d.prioridade}</span></div></div>
       <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value"><span class="badge-status badge-${d.status.replace(' ','-')}">${d.status}</span></div></div>
     </div>
+    ${d.prazo ? `<div class="detail-row"><div class="detail-label">Prazo</div><div class="detail-value">${formatDate(d.prazo)} ${getDiasAtraso(d) !== null ? (getDiasAtraso(d) < 0 ? '<span style="color:#e53935;font-weight:700;">&#9888; Atrasado</span>' : getDiasAtraso(d) === 0 ? '<span style="color:#e53935;font-weight:700;">Vence hoje!</span>' : '') : ''}</div></div>` : ''}
     ${d.observacao ? `<div class="detail-row"><div class="detail-label">Observação</div><div class="detail-value">${escHtml(d.observacao)}</div></div>` : ''}
     ${d.finalizado ? `<div class="detail-row"><div class="detail-label">Finalizado em</div><div class="detail-value">${formatDatetime(d.finalizado)}</div></div>` : ''}
     ${d.foto ? `<div class="detail-row"><div class="detail-label">Foto</div><img src="${d.foto}" class="detail-photo"></div>` : ''}
   `;
+  renderHistorico(d.historico || []);
   document.getElementById('detailModal').classList.add('show');
 }
 
@@ -1728,6 +1770,13 @@ function isAtrasado(d) {
   return new Date(d.prazo) < new Date();
 }
 
+function getDiasAtraso(d) {
+  if (!d.prazo || d.status === 'Finalizado') return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const prazo = new Date(d.prazo + 'T00:00:00');
+  return Math.floor((prazo - hoje) / (1000*60*60*24));
+}
+
 // ─── TABELA ──────────────────────────────────────────────────────
 let tabelaSort = { col: 'num', asc: false };
 function switchTab(tab) {
@@ -1785,9 +1834,10 @@ function renderTabela() {
       <td class="cel-edit" data-id="${d.id}" data-campo="status" data-tipo="select" data-opcoes="Aberto,Em Andamento,Finalizado">
         <span style="color:${statusColor[d.status]||'#9e9e9e'};font-weight:700;">${d.status||'-'}</span>
       </td>
+      <td>${d.prazo ? formatDate(d.prazo) : '-'}</td>
       <td class="cel-edit" data-id="${d.id}" data-campo="observacao" data-tipo="text" style="max-width:150px">${escHtml(d.observacao||'')}</td>
     </tr>
-  `).join('') || '<tr><td colspan="9" style="text-align:center;padding:24px;color:#9e9e9e">Nenhuma demanda encontrada</td></tr>';
+  `).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:#9e9e9e">Nenhuma demanda encontrada</td></tr>';
 
   document.getElementById('tabelaCount').textContent = filtered.length + ' demanda' + (filtered.length !== 1 ? 's' : '') + ' encontrada' + (filtered.length !== 1 ? 's' : '');
 }
@@ -2040,6 +2090,7 @@ function abrirRapida() {
   document.getElementById('rDescricao').value = '';
   document.getElementById('rSolicitante').value = '';
   document.getElementById('rSetor').value = '';
+  document.getElementById('rPrazo').value = '';
   setPriorRapida('Alta');
   document.getElementById('rapidaModal').classList.add('show');
   setTimeout(() => document.getElementById('rDescricao').focus(), 300);
@@ -2078,10 +2129,12 @@ function salvarRapida() {
     prioridade: priorRapida,
     status: 'Aberto',
     observacao: '',
+    prazo: document.getElementById('rPrazo').value || null,
     foto: null,
     criado: new Date().toISOString(),
     atualizado: new Date().toISOString(),
-    finalizado: null
+    finalizado: null,
+    historico: [],
   };
   demandas.unshift(nova);
   saveData();
@@ -2090,6 +2143,39 @@ function salvarRapida() {
   showToast('⚡ Demanda #' + String(nova.num).padStart(3,'0') + ' salva!', 'success');
   updateDashboard();
   renderList();
+}
+
+// ─── HISTÓRICO ───────────────────────────────────────────────────
+function adicionarComentario() {
+  const txt = document.getElementById('novoComentario').value.trim();
+  if (!txt) return;
+  const idx = demandas.findIndex(d => String(d.id) === String(detailId));
+  if (idx === -1) return;
+  if (!demandas[idx].historico) demandas[idx].historico = [];
+  demandas[idx].historico.push({
+    texto: txt,
+    data: new Date().toISOString()
+  });
+  demandas[idx].atualizado = new Date().toISOString();
+  saveData();
+  sheetsUpsert(demandas[idx]);
+  document.getElementById('novoComentario').value = '';
+  renderHistorico(demandas[idx].historico);
+  showToast('Atualização registrada!', 'success');
+}
+
+function renderHistorico(hist) {
+  const el = document.getElementById('historicoLista');
+  if (!hist || !hist.length) {
+    el.innerHTML = '<div style="font-size:0.75rem;color:#bdbdbd;padding:4px 0;">Nenhuma atualização ainda.</div>';
+    return;
+  }
+  el.innerHTML = [...hist].reverse().map(h => `
+    <div style="padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:0.78rem;">
+      <span style="color:#9e9e9e;font-size:0.7rem;">${formatDatetime(h.data)}</span>
+      <div style="color:#212121;margin-top:2px;">${escHtml(h.texto)}</div>
+    </div>
+  `).join('');
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────
