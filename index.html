@@ -1363,7 +1363,7 @@ function saveDemanda() {
   const foto = fotoSrc && document.getElementById('fFotoPreview').style.display !== 'none' ? fotoSrc : null;
 
   if (editingId) {
-    const idx = demandas.findIndex(d => d.id === editingId);
+    const idx = demandas.findIndex(d => String(d.id) === String(editingId));
     if (idx !== -1) {
       demandas[idx] = {
         ...demandas[idx],
@@ -1406,7 +1406,7 @@ function saveDemanda() {
     showToast('Demanda #' + String(nova.num).padStart(3,'0') + ' criada!', 'success');
   }
   saveData();
-  sheetsUpsert(editingId ? demandas.find(d => d.id === editingId) : demandas[0]);
+  sheetsUpsert(editingId ? demandas.find(d => String(d.id) === String(editingId)) : demandas[0]);
   initForm();
   switchTab('demandas');
 }
@@ -1834,7 +1834,7 @@ function renderTabela() {
       <td class="cel-edit" data-id="${d.id}" data-campo="status" data-tipo="select" data-opcoes="Aberto,Em Andamento,Finalizado">
         <span style="color:${statusColor[d.status]||'#9e9e9e'};font-weight:700;">${d.status||'-'}</span>
       </td>
-      <td>${d.prazo ? formatDate(d.prazo) : '-'}</td>
+      <td class="cel-edit" data-id="${d.id}" data-campo="prazo" data-tipo="date" style="white-space:nowrap">${d.prazo ? formatDate(d.prazo) : '-'}</td>
       <td class="cel-edit" data-id="${d.id}" data-campo="observacao" data-tipo="text" style="max-width:150px">${escHtml(d.observacao||'')}</td>
     </tr>
   `).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:#9e9e9e">Nenhuma demanda encontrada</td></tr>';
