@@ -76,41 +76,64 @@
     bottom: 0; left: 0; right: 0;
     background: white;
     display: flex;
+    align-items: center;
     border-top: 1px solid #e0e0e0;
     z-index: 200;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.1);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 6px 4px env(safe-area-inset-bottom, 6px);
     width: 100%;
     overflow: hidden;
+    gap: 2px;
   }
   .bottom-nav button {
     flex: 1 1 0;
     min-width: 0;
     border: none;
     background: none;
-    padding: 8px 2px 6px;
-    font-size: 0.6rem;
-    color: #9e9e9e;
+    padding: 6px 2px;
+    font-size: 0.58rem;
+    color: #bdbdbd;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.18s;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     white-space: nowrap;
     overflow: hidden;
+    border-radius: 12px;
   }
-  .bottom-nav button i { font-size: 1.1rem; }
-  .bottom-nav button.active { color: var(--primary); }
-  .bottom-nav button.active i { color: var(--primary); }
+  .bottom-nav button i { font-size: 1.1rem; transition: all 0.18s; }
+  /* ATIVO: fundo azul escuro + ícone e texto brancos — inconfundível */
+  .bottom-nav button.active {
+    color: white;
+    background: var(--primary);
+    border-radius: 14px;
+    padding: 6px 4px;
+  }
+  .bottom-nav button.active i { color: white; }
+  /* RÁPIDA: círculo com borda tracejada + ícone cinza — claramente ação, não aba */
   .bottom-nav .btn-new-fab {
     flex: 1 1 0;
-    background: var(--primary);
-    color: white;
-    border-radius: 0;
+    background: none;
+    color: #9e9e9e;
+    font-size: 0.58rem;
   }
-  .bottom-nav .btn-new-fab i { color: white; font-size: 1.3rem; }
-  .bottom-nav .btn-new-fab:hover { background: var(--primary-light); }
+  .bottom-nav .btn-new-fab i {
+    font-size: 1.2rem;
+    color: #757575;
+    border: 2px dashed #bdbdbd;
+    border-radius: 50%;
+    padding: 5px;
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+  }
+  .bottom-nav .btn-new-fab:hover i, .bottom-nav .btn-new-fab:active i {
+    border-color: var(--primary);
+    color: var(--primary);
+    border-style: solid;
+  }
 
   /* TABS CONTENT */
   .tab-content-area { display: none; padding: 12px; }
@@ -182,6 +205,46 @@
 
   /* DEMAND CARDS */
   .demand-list { display: flex; flex-direction: column; gap: 10px; }
+
+  /* VIEW TOOLBAR */
+  .view-toolbar { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .view-group-btns, .view-style-btns { display:flex; gap:4px; }
+  .view-btn { border:1px solid #e0e0e0; background:white; border-radius:20px; padding:5px 11px; font-size:0.7rem; cursor:pointer; color:#757575; font-weight:600; transition:all 0.2s; white-space:nowrap; }
+  .view-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+  .view-style-btns .view-btn { padding:5px 10px; border-radius:8px; font-size:0.82rem; }
+
+  /* GROUP HEADER */
+  .group-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:white; padding:7px 14px; border-radius:8px; margin:14px 0 8px; font-weight:700; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center; }
+  .group-header .group-badge { background:rgba(255,255,255,0.25); border-radius:20px; padding:2px 8px; font-size:0.72rem; }
+
+  /* POST-IT */
+  .postit-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:12px; }
+  .postit-card { border-radius:4px; padding:12px 10px 10px; cursor:pointer; position:relative; box-shadow:3px 4px 10px rgba(0,0,0,0.18); transition:transform 0.15s,box-shadow 0.15s; min-height:110px; display:flex; flex-direction:column; gap:6px; }
+  .postit-card:hover { transform:translateY(-3px) rotate(0.5deg); box-shadow:5px 8px 16px rgba(0,0,0,0.2); }
+  .postit-card.prior-Alta { background:#fff9c4; border-top:5px solid #ef5350; }
+  .postit-card.prior-Média { background:#fff9c4; border-top:5px solid #ffa726; }
+  .postit-card.prior-Baixa { background:#fff9c4; border-top:5px solid #66bb6a; }
+  .postit-num { font-size:0.65rem; font-weight:700; color:#9e9e9e; }
+  .postit-desc { font-size:0.8rem; font-weight:700; color:#333; flex:1; line-height:1.3; }
+  .postit-footer { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:3px; margin-top:auto; }
+  .postit-setor { font-size:0.65rem; color:#757575; }
+
+  /* KANBAN */
+  .kanban-wrap { display:flex; gap:12px; overflow-x:auto; padding-bottom:12px; -webkit-overflow-scrolling:touch; }
+  .kanban-col { flex:0 0 250px; display:flex; flex-direction:column; }
+  .kanban-col-header { font-weight:700; font-size:0.78rem; padding:8px 12px; border-radius:8px 8px 0 0; color:white; display:flex; justify-content:space-between; align-items:center; }
+  .kanban-col-header.aberto { background:#ef5350; }
+  .kanban-col-header.andamento { background:#ffa726; }
+  .kanban-col-header.finalizado { background:#66bb6a; }
+  .kanban-col-body { background:#f0f2f5; border-radius:0 0 8px 8px; padding:8px; display:flex; flex-direction:column; gap:8px; min-height:80px; }
+  .kanban-card { background:white; border-radius:8px; padding:10px; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,0.1); border-left:4px solid #ccc; transition:transform 0.15s; }
+  .kanban-card:hover { transform:translateY(-2px); box-shadow:0 3px 10px rgba(0,0,0,0.14); }
+  .kanban-card.prior-Alta { border-left-color:#ef5350; }
+  .kanban-card.prior-Média { border-left-color:#ffa726; }
+  .kanban-card.prior-Baixa { border-left-color:#66bb6a; }
+  .kanban-card-num { font-size:0.63rem; color:#9e9e9e; font-weight:600; }
+  .kanban-card-desc { font-size:0.78rem; font-weight:700; color:#212121; margin:3px 0; line-height:1.3; }
+  .kanban-card-meta { font-size:0.66rem; color:#757575; display:flex; gap:6px; flex-wrap:wrap; }
   .demand-card {
     background: white;
     border-radius: 12px;
@@ -556,9 +619,10 @@
     color: #e0e0e0;
   }
   body.dark .bottom-nav { background: #1e1e1e; border-top-color: #333; }
-  body.dark .bottom-nav button { color: #757575; }
-  body.dark .bottom-nav button.active { color: #90caf9; }
-  body.dark .bottom-nav button.active i { color: #90caf9; }
+  body.dark .bottom-nav button { color: #616161; }
+  body.dark .bottom-nav button.active { background: var(--primary); color: white; }
+  body.dark .bottom-nav button.active i { color: white; }
+  body.dark .bottom-nav .btn-new-fab i { border-color: #555; color: #757575; }
   body.dark .kpi-card,
   body.dark .chart-card,
   body.dark .filter-bar,
@@ -586,6 +650,11 @@
   body.dark .tabela-wrap td { border-bottom-color: #2a2a2a; }
   body.dark .tabela-wrap tr:hover td { background: #2a2a2a; }
   body.dark .demand-card { background: #1e1e1e; }
+  body.dark .view-btn { background:#2a2a2a; border-color:#444; color:#9e9e9e; }
+  body.dark .view-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
+  body.dark .kanban-col-body { background:#2a2a2a; }
+  body.dark .kanban-card { background:#1e1e1e; }
+  body.dark .kanban-card-desc { color:#e0e0e0; }
 
   /* PERIODO FILTER */
   .periodo-bar {
@@ -930,6 +999,24 @@ function ok(data) {
     </div>
     <div id="tempoMedioInfo" style="font-size:0.75rem;color:#9e9e9e;margin-top:8px;text-align:center;"></div>
   </div>
+
+  <!-- CHART POR MÁQUINA -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fa-solid fa-gears me-1"></i>Demandas por Máquina</div>
+    <div id="chartMaquinaWrap" style="position:relative;overflow:hidden;">
+      <canvas id="chartMaquina"></canvas>
+    </div>
+    <div id="chartMaquinaVazio" style="display:none;text-align:center;padding:20px;color:#9e9e9e;font-size:0.8rem;">Nenhuma máquina cadastrada ainda.</div>
+  </div>
+
+  <!-- CHART POR SOLICITANTE -->
+  <div class="chart-card">
+    <div class="chart-title"><i class="fa-solid fa-users me-1"></i>Demandas por Solicitante</div>
+    <div id="chartSolicitanteWrap" style="position:relative;overflow:hidden;">
+      <canvas id="chartSolicitante"></canvas>
+    </div>
+    <div id="chartSolicitanteVazio" style="display:none;text-align:center;padding:20px;color:#9e9e9e;font-size:0.8rem;">Nenhum solicitante cadastrado ainda.</div>
+  </div>
 </div>
 
 <!-- ABA TABELA -->
@@ -1003,8 +1090,24 @@ function ok(data) {
       <option>Baixa</option>
     </select>
   </div>
+
+  <!-- TOOLBAR DE VISUALIZAÇÃO -->
+  <div class="view-toolbar">
+    <div class="view-group-btns" id="groupBtns">
+      <button class="view-btn active" data-val="none"    onclick="setAgrupamento('none')">Todos</button>
+      <button class="view-btn"        data-val="setor"   onclick="setAgrupamento('setor')">Setor</button>
+      <button class="view-btn"        data-val="maquina" onclick="setAgrupamento('maquina')">Máquina</button>
+      <button class="view-btn"        data-val="solicitante" onclick="setAgrupamento('solicitante')">Solicitante</button>
+    </div>
+    <div class="view-style-btns">
+      <button class="view-btn active" data-val="card"   onclick="setVisual('card')"   title="Cards"><i class="fa-solid fa-list-ul"></i></button>
+      <button class="view-btn"        data-val="postit" onclick="setVisual('postit')" title="Post-it"><i class="fa-solid fa-note-sticky"></i></button>
+      <button class="view-btn"        data-val="kanban" onclick="setVisual('kanban')" title="Kanban"><i class="fa-solid fa-table-columns"></i></button>
+    </div>
+  </div>
+
   <div class="section-title" id="listCount">0 demandas</div>
-  <div class="demand-list" id="demandList"></div>
+  <div id="demandList"></div>
 </div>
 
 <!-- NOVA DEMANDA -->
@@ -1499,13 +1602,13 @@ function loadEdit(id) {
 function renderList() {
   const search = (document.getElementById('filterSearch').value || '').toLowerCase();
   const status = document.getElementById('filterStatus').value;
-  const prior = document.getElementById('filterPrior').value;
+  const prior  = document.getElementById('filterPrior').value;
 
   let filtered = demandas.filter(d => {
     const matchSearch = !search || [d.descricao, d.solicitante, d.setor, d.maquina, d.observacao, '#'+String(d.num).padStart(3,'0')]
       .some(v => (v||'').toLowerCase().includes(search));
     const matchStatus = !status || d.status === status;
-    const matchPrior = !prior || d.prioridade === prior;
+    const matchPrior  = !prior  || d.prioridade === prior;
     return matchSearch && matchStatus && matchPrior;
   });
 
@@ -1513,37 +1616,37 @@ function renderList() {
 
   const container = document.getElementById('demandList');
   if (!filtered.length) {
+    container.className = '';
     container.innerHTML = `<div class="empty-state"><i class="fa-solid fa-inbox"></i><div style="font-size:1rem;font-weight:700;margin-bottom:6px">Nenhuma demanda encontrada</div><div style="font-size:0.82rem">Crie uma nova demanda clicando em "+ Nova"</div></div>`;
     return;
   }
 
-  container.innerHTML = filtered.map(d => {
-    const statusClass = d.status.replace(' ', '.');
-    const badgeClass = 'badge-' + d.status.replace(' ', '-');
-    const priorClass = 'prior-' + d.prioridade;
-    const badgePClass = 'badge-' + d.prioridade;
-    const dateStr = formatDate(d.data);
+  // ── helpers ──────────────────────────────────────────────────────
+  function prazoHtmlFn(d) {
     const dias = getDiasAtraso(d);
-    const prazoLabel = d.prazo ? formatDate(d.prazo) : '';
-    const prazoHtml = dias !== null ? (
-      dias < 0 ? `<span class="badge-prazo atrasado"><i class="fa-solid fa-circle-exclamation me-1"></i>Atrasado ${Math.abs(dias)}d</span>` :
-      dias === 0 ? `<span class="badge-prazo vencehoje"><i class="fa-solid fa-clock me-1"></i>Vence hoje</span>` :
-      dias <= 3 ? `<span class="badge-prazo vencendo"><i class="fa-solid fa-hourglass-half me-1"></i>${dias}d</span>` :
-      `<span class="badge-prazo ok"><i class="fa-solid fa-calendar me-1"></i>${prazoLabel}</span>`
-    ) : '';
+    if (dias === null) return '';
+    if (dias < 0)  return `<span class="badge-prazo atrasado"><i class="fa-solid fa-circle-exclamation me-1"></i>Atrasado ${Math.abs(dias)}d</span>`;
+    if (dias === 0) return `<span class="badge-prazo vencehoje"><i class="fa-solid fa-clock me-1"></i>Vence hoje</span>`;
+    if (dias <= 3)  return `<span class="badge-prazo vencendo"><i class="fa-solid fa-hourglass-half me-1"></i>${dias}d</span>`;
+    return `<span class="badge-prazo ok"><i class="fa-solid fa-calendar me-1"></i>${formatDate(d.prazo)}</span>`;
+  }
+
+  function cardHtml(d) {
+    const sc = d.status.replace(' ', '.');
+    const bc = 'badge-' + d.status.replace(' ', '-');
     return `
-      <div class="demand-card status-${statusClass} ${priorClass}" onclick="openDetail('${d.id}')">
+      <div class="demand-card status-${sc} prior-${d.prioridade}" onclick="openDetail('${d.id}')">
         <div class="demand-photo-wrap">
           <div style="flex:1">
             <div class="demand-header">
               <div>
-                <div class="demand-num">#${String(d.num).padStart(3,'0')} · ${dateStr}</div>
+                <div class="demand-num">#${String(d.num).padStart(3,'0')} · ${formatDate(d.data)}</div>
                 <div class="demand-title">${escHtml(d.descricao.substring(0,80))}${d.descricao.length>80?'...':''}</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-                <span class="badge-status ${badgeClass}">${d.status}</span>
-                <span class="badge-prior ${badgePClass}">${d.prioridade}</span>
-                ${prazoHtml}
+                <span class="badge-status ${bc}">${d.status}</span>
+                <span class="badge-prior badge-${d.prioridade}">${d.prioridade}</span>
+                ${prazoHtmlFn(d)}
               </div>
             </div>
             <div class="demand-meta">
@@ -1555,7 +1658,97 @@ function renderList() {
           ${d.foto ? `<img src="${d.foto}" class="demand-photo" alt="foto">` : ''}
         </div>
       </div>`;
-  }).join('');
+  }
+
+  function postitHtml(d) {
+    const dias = getDiasAtraso(d);
+    let prazoTag = '';
+    if (dias !== null) {
+      if (dias < 0)  prazoTag = `<span class="badge-prazo atrasado" style="font-size:0.6rem">⚠ Atrasado</span>`;
+      else if (dias === 0) prazoTag = `<span class="badge-prazo vencehoje" style="font-size:0.6rem">Hoje!</span>`;
+      else if (dias <= 3)  prazoTag = `<span class="badge-prazo vencendo" style="font-size:0.6rem">${dias}d</span>`;
+    }
+    return `
+      <div class="postit-card prior-${d.prioridade}" onclick="openDetail('${d.id}')">
+        <div class="postit-num">#${String(d.num).padStart(3,'0')}</div>
+        <div class="postit-desc">${escHtml(d.descricao.substring(0,70))}${d.descricao.length>70?'...':''}</div>
+        <div class="postit-footer">
+          <span class="postit-setor">${escHtml(d.setor||d.maquina||'')}</span>
+          <span class="badge-status badge-${d.status.replace(' ','-')}" style="font-size:0.6rem">${d.status}</span>
+          ${prazoTag}
+        </div>
+      </div>`;
+  }
+
+  function kanbanCardHtml(d) {
+    return `
+      <div class="kanban-card prior-${d.prioridade}" onclick="openDetail('${d.id}')">
+        <div class="kanban-card-num">#${String(d.num).padStart(3,'0')} · <span class="badge-prior badge-${d.prioridade}" style="font-size:0.6rem">${d.prioridade}</span></div>
+        <div class="kanban-card-desc">${escHtml(d.descricao.substring(0,60))}${d.descricao.length>60?'...':''}</div>
+        <div class="kanban-card-meta">
+          ${d.solicitante ? `<span><i class="fa-solid fa-user" style="font-size:0.6rem"></i> ${escHtml(d.solicitante)}</span>` : ''}
+          ${d.setor ? `<span><i class="fa-solid fa-building" style="font-size:0.6rem"></i> ${escHtml(d.setor)}</span>` : ''}
+          ${d.maquina ? `<span><i class="fa-solid fa-gears" style="font-size:0.6rem"></i> ${escHtml(d.maquina)}</span>` : ''}
+        </div>
+        ${prazoHtmlFn(d) ? `<div style="margin-top:5px">${prazoHtmlFn(d)}</div>` : ''}
+      </div>`;
+  }
+
+  function groupAndRender(arr, renderFn, wrapClass) {
+    if (viewAgrupamento === 'none') {
+      return `<div class="${wrapClass}">${arr.map(renderFn).join('')}</div>`;
+    }
+    const keyMap = { setor:'setor', maquina:'maquina', solicitante:'solicitante' };
+    const key = keyMap[viewAgrupamento];
+    const groups = {};
+    arr.forEach(d => {
+      const k = (d[key] && d[key].trim()) ? d[key].trim() : '(Não informado)';
+      if (!groups[k]) groups[k] = [];
+      groups[k].push(d);
+    });
+    return Object.entries(groups)
+      .sort((a,b) => b[1].length - a[1].length)
+      .map(([label, items]) =>
+        `<div class="group-header"><span>${label}</span><span class="group-badge">${items.length} demanda${items.length!==1?'s':''}</span></div>
+         <div class="${wrapClass}">${items.map(renderFn).join('')}</div>`
+      ).join('');
+  }
+
+  // ── KANBAN ───────────────────────────────────────────────────────
+  if (viewVisual === 'kanban') {
+    container.className = '';
+    const cols = [
+      { label:'Aberto',       cls:'aberto',     key:'Aberto'       },
+      { label:'Em Andamento', cls:'andamento',   key:'Em Andamento' },
+      { label:'Finalizado',   cls:'finalizado',  key:'Finalizado'   },
+    ];
+    container.innerHTML = `<div class="kanban-wrap">` +
+      cols.map(col => {
+        const items = filtered.filter(d => d.status === col.key);
+        return `
+          <div class="kanban-col">
+            <div class="kanban-col-header ${col.cls}">
+              <span>${col.label}</span>
+              <span style="background:rgba(255,255,255,0.25);border-radius:20px;padding:1px 8px;font-size:0.72rem">${items.length}</span>
+            </div>
+            <div class="kanban-col-body">
+              ${items.length ? items.map(kanbanCardHtml).join('') : '<div style="color:#bbb;font-size:0.75rem;text-align:center;padding:10px">Nenhuma</div>'}
+            </div>
+          </div>`;
+      }).join('') + `</div>`;
+    return;
+  }
+
+  // ── POST-IT ──────────────────────────────────────────────────────
+  if (viewVisual === 'postit') {
+    container.className = '';
+    container.innerHTML = groupAndRender(filtered, postitHtml, 'postit-grid');
+    return;
+  }
+
+  // ── CARD (padrão) ────────────────────────────────────────────────
+  container.className = 'demand-list';
+  container.innerHTML = groupAndRender(filtered, cardHtml, 'demand-list');
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────
@@ -1841,6 +2034,22 @@ function getDiasAtraso(d) {
 
 // ─── TABELA ──────────────────────────────────────────────────────
 let tabelaSort = { col: 'num', asc: false };
+let viewAgrupamento = 'none';
+let viewVisual = 'card';
+
+function setAgrupamento(val) {
+  viewAgrupamento = val;
+  document.querySelectorAll('#groupBtns .view-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+  renderList();
+}
+function setVisual(val) {
+  viewVisual = val;
+  document.querySelectorAll('.view-style-btns .view-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+  // kanban não usa agrupamento — oculta/mostra toolbar de grupo
+  document.getElementById('groupBtns').style.opacity = val === 'kanban' ? '0.35' : '1';
+  document.getElementById('groupBtns').style.pointerEvents = val === 'kanban' ? 'none' : '';
+  renderList();
+}
 function switchTab(tab) {
   document.querySelectorAll('.tab-content-area').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
@@ -2204,6 +2413,53 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
   document.getElementById('tempoMedioInfo').textContent = tm.total
     ? `Média geral: ${tm.media} dias (baseado em ${tm.total} demanda${tm.total!==1?'s':''} finalizada${tm.total!==1?'s':''})`
     : 'Ainda sem demandas finalizadas para calcular.';
+
+  // CHART POR MÁQUINA
+  function buildHorizChart(canvasId, wrapId, vazioId, dados, cor) {
+    const sorted2 = Object.entries(dados).sort((a,b) => b[1]-a[1]).slice(0,8);
+    const vazio = document.getElementById(vazioId);
+    const wrap  = document.getElementById(wrapId);
+    if (!sorted2.length) {
+      vazio.style.display = 'block'; wrap.style.display = 'none'; return;
+    }
+    vazio.style.display = 'none'; wrap.style.display = '';
+    const altura = Math.max(120, Math.min(sorted2.length * 50, 320));
+    wrap.style.height = altura + 'px';
+    const ctx2 = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: sorted2.map(s => s[0]),
+        datasets: [{ data: sorted2.map(s => s[1]), backgroundColor: cor, borderRadius: 6, maxBarThickness: 28, barPercentage: 0.55, categoryPercentage: 0.9 }]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 80 } },
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            display: true, anchor: 'end', align: 'end',
+            color: textColor, font: { weight: 'bold', size: 11 },
+            formatter: val => val + (val === 1 ? ' demanda' : ' demandas')
+          }
+        },
+        scales: {
+          x: { beginAtZero: true, max: Math.max(...sorted2.map(s=>s[1])) + 2, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+          y: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  const maquinaCount = {};
+  filtrados.forEach(d => { if (d.maquina && d.maquina.trim()) maquinaCount[d.maquina.trim()] = (maquinaCount[d.maquina.trim()]||0)+1; });
+  if (charts.maquina) charts.maquina.destroy();
+  charts.maquina = buildHorizChart('chartMaquina','chartMaquinaWrap','chartMaquinaVazio', maquinaCount, '#ab47bc');
+
+  const solicitanteCount = {};
+  filtrados.forEach(d => { if (d.solicitante && d.solicitante.trim()) solicitanteCount[d.solicitante.trim()] = (solicitanteCount[d.solicitante.trim()]||0)+1; });
+  if (charts.solicitante) charts.solicitante.destroy();
+  charts.solicitante = buildHorizChart('chartSolicitante','chartSolicitanteWrap','chartSolicitanteVazio', solicitanteCount, '#26a69a');
 
   // DESTAQUE ATRASADOS na lista
   document.querySelectorAll('.demand-card').forEach(card => {
