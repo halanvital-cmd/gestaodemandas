@@ -487,6 +487,45 @@
   .cel-edit:active { background: #bbdefb !important; }
   body.dark .cel-edit:hover { background: #1a3a5c !important; }
 
+  /* ABA FOCO */
+  .foco-secao { margin-bottom: 20px; }
+  .foco-secao-titulo {
+    font-size: 0.72rem; font-weight: 800; letter-spacing: 0.8px;
+    text-transform: uppercase; padding: 6px 12px; border-radius: 8px 8px 0 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .foco-secao-titulo.atrasado { background: #b71c1c; color: white; }
+  .foco-secao-titulo.hoje { background: #e53935; color: white; }
+  .foco-secao-titulo.semana { background: #ff8f00; color: white; }
+  .foco-secao-titulo.alta { background: #c62828; color: white; }
+  .foco-secao-titulo.andamento { background: #1565c0; color: white; }
+  .foco-secao-titulo.prazo { background: #1a237e; color: white; }
+  .foco-card {
+    background: white; border-radius: 0 0 10px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .foco-item {
+    padding: 12px 14px; border-bottom: 1px solid #f0f0f0;
+    cursor: pointer; transition: background 0.15s;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .foco-item:last-child { border-bottom: none; }
+  .foco-item:hover { background: #f5f7ff; }
+  .foco-item-num { font-size: 0.68rem; color: #9e9e9e; font-weight: 700; }
+  .foco-item-desc { font-size: 0.88rem; font-weight: 600; color: #212121; line-height: 1.3; }
+  .foco-item-meta { font-size: 0.72rem; color: #757575; display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+  .foco-item-prazo { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .foco-item-prazo.atrasado { background: #ffebee; color: #b71c1c; }
+  .foco-item-prazo.hoje { background: #ffebee; color: #e53935; }
+  .foco-item-prazo.semana { background: #fff8e1; color: #ff8f00; }
+  .foco-vazio { text-align: center; padding: 18px; color: #9e9e9e; font-size: 0.82rem; background: white; border-radius: 0 0 10px 10px; }
+  .foco-tudo-ok { text-align:center; padding:32px 16px; background:white; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
+  body.dark .foco-card, body.dark .foco-vazio, body.dark .foco-tudo-ok { background: #1e1e1e; }
+  body.dark .foco-item { border-bottom-color: #2a2a2a; }
+  body.dark .foco-item:hover { background: #252525; }
+  body.dark .foco-item-desc { color: #e0e0e0; }
+
   /* CAPTURA RÁPIDA */
   .btn-new-fab { background: none; border: none; }
   #nav-rapida { color: #ffa726 !important; }
@@ -795,8 +834,13 @@ function ok(data) {
 
 <!-- TABS CONTENT -->
 
+<!-- ABA FOCO -->
+<div class="tab-content-area active" id="tab-foco">
+  <div id="focoContent"></div>
+</div>
+
 <!-- DASHBOARD -->
-<div class="tab-content-area active" id="tab-dashboard">
+<div class="tab-content-area" id="tab-dashboard">
   <div class="section-title mt-2"><i class="fa-solid fa-chart-line me-1"></i>Painel Geral</div>
 
   <!-- FILTRO PERÍODO -->
@@ -1051,9 +1095,9 @@ function ok(data) {
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
-  <button onclick="switchTab('dashboard')" id="nav-dashboard" class="active">
-    <i class="fa-solid fa-chart-pie"></i>
-    Dashboard
+  <button onclick="switchTab('foco')" id="nav-foco" class="active">
+    <i class="fa-solid fa-crosshairs"></i>
+    Foco
   </button>
   <button onclick="switchTab('demandas')" id="nav-demandas">
     <i class="fa-solid fa-list-ul"></i>
@@ -1267,6 +1311,7 @@ async function sheetsCarregar() {
   setSyncStatus('ok');
   updateDashboard();
   renderList();
+  renderFoco();
   showToast('Dados carregados do Google Sheets!', 'success');
 }
 
@@ -1773,7 +1818,18 @@ function isAtrasado(d) {
 function getDiasAtraso(d) {
   if (!d.prazo || d.status === 'Finalizado') return null;
   const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const prazo = new Date(d.prazo + 'T00:00:00');
+  let prazo;
+  const s = String(d.prazo).trim();
+  // Aceita YYYY-MM-DD ou DD/MM/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    prazo = new Date(s + 'T00:00:00');
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split('/');
+    prazo = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+  } else {
+    prazo = new Date(s);
+  }
+  if (!prazo || isNaN(prazo.getTime())) return null;
   return Math.floor((prazo - hoje) / (1000*60*60*24));
 }
 
@@ -1784,6 +1840,7 @@ function switchTab(tab) {
   document.querySelectorAll('.bottom-nav button').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
+  if (tab === 'foco') renderFoco();
   if (tab === 'dashboard') updateDashboard();
   if (tab === 'demandas') renderList();
   if (tab === 'tabela') renderTabela();
@@ -2084,6 +2141,87 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
   });
 }
 
+// ─── ABA FOCO ─────────────────────────────────────────────────────
+function renderFoco() {
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const ativas = demandas.filter(d => d.status !== 'Finalizado');
+
+  const atrasadas   = ativas.filter(d => d.prazo && getDiasAtraso(d) < 0).sort((a,b) => getDiasAtraso(a) - getDiasAtraso(b));
+  const venceHoje   = ativas.filter(d => d.prazo && getDiasAtraso(d) === 0);
+  const proxSemana  = ativas.filter(d => d.prazo && getDiasAtraso(d) > 0 && getDiasAtraso(d) <= 7);
+  const altaSemPrazo = ativas.filter(d => d.prioridade === 'Alta' && !d.prazo);
+  const emAndamento = ativas.filter(d => d.status === 'Em Andamento');
+
+  // Remove duplicatas entre seções
+  const vistos = new Set();
+  function uniq(arr) { return arr.filter(d => { if (vistos.has(d.id)) return false; vistos.add(d.id); return true; }); }
+  const _atrasadas  = uniq(atrasadas);
+  const _hoje       = uniq(venceHoje);
+  const _semana     = uniq(proxSemana);
+  const _alta       = uniq(altaSemPrazo);
+  const _andamento  = uniq(emAndamento);
+
+  function cardItem(d) {
+    const dias = getDiasAtraso(d);
+    let prazoTag = '';
+    if (dias !== null) {
+      if (dias < 0) prazoTag = `<span class="foco-item-prazo atrasado">⚠ Atrasado ${Math.abs(dias)}d</span>`;
+      else if (dias === 0) prazoTag = `<span class="foco-item-prazo hoje">🔴 Vence hoje</span>`;
+      else prazoTag = `<span class="foco-item-prazo semana">📅 ${dias}d para vencer</span>`;
+    }
+    return `
+      <div class="foco-item" onclick="openDetail('${d.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1">
+            <div class="foco-item-num">#${String(d.num).padStart(3,'0')} · ${d.setor||''}</div>
+            <div class="foco-item-desc">${escHtml(d.descricao)}</div>
+            <div class="foco-item-meta">
+              ${d.solicitante ? `<span><i class="fa-solid fa-user" style="font-size:0.65rem"></i> ${escHtml(d.solicitante)}</span>` : ''}
+              ${d.maquina ? `<span><i class="fa-solid fa-gears" style="font-size:0.65rem"></i> ${escHtml(d.maquina)}</span>` : ''}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+            ${prazoTag}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function secao(titulo, icone, cls, lista) {
+    if (!lista.length) return '';
+    return `
+      <div class="foco-secao">
+        <div class="foco-secao-titulo ${cls}"><i class="${icone}"></i>${titulo} <span style="margin-left:auto;background:rgba(255,255,255,0.3);border-radius:20px;padding:1px 8px;">${lista.length}</span></div>
+        <div class="foco-card">${lista.map(cardItem).join('')}</div>
+      </div>`;
+  }
+
+  const total = _atrasadas.length + _hoje.length + _semana.length + _alta.length + _andamento.length;
+
+  let html = `<div style="padding:4px 0 8px;">
+    <div style="font-size:0.8rem;color:#9e9e9e;margin-bottom:12px;">
+      <i class="fa-solid fa-crosshairs me-1"></i>
+      ${total === 0 ? 'Tudo em dia! Nenhuma ação urgente.' : total + ' demanda' + (total!==1?'s':'')+' precisam de atenção'}
+    </div>`;
+
+  if (total === 0) {
+    html += `<div class="foco-tudo-ok">
+      <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
+      <div style="font-weight:700;color:var(--primary);font-size:1rem;">Tudo em dia!</div>
+      <div style="color:#9e9e9e;font-size:0.82rem;margin-top:4px;">Nenhuma demanda urgente no momento.</div>
+    </div>`;
+  } else {
+    html += secao('ATRASADAS', 'fa-solid fa-circle-exclamation', 'atrasado', _atrasadas);
+    html += secao('VENCEM HOJE', 'fa-solid fa-clock', 'hoje', _hoje);
+    html += secao('VENCEM ESTA SEMANA', 'fa-solid fa-hourglass-half', 'semana', _semana);
+    html += secao('ALTA PRIORIDADE', 'fa-solid fa-fire', 'alta', _alta);
+    html += secao('EM ANDAMENTO', 'fa-solid fa-rotate', 'andamento', _andamento);
+  }
+
+  html += '</div>';
+  document.getElementById('focoContent').innerHTML = html;
+}
+
 // ─── CAPTURA RÁPIDA ───────────────────────────────────────────────
 let priorRapida = 'Alta';
 function abrirRapida() {
@@ -2190,10 +2328,10 @@ document.addEventListener('click', function(e) {
 loadData();
 initDarkMode();
 initForm();
-updateDashboard();
+renderFoco();
 if (apiUrl) {
   setSyncStatus('syncing');
-  sheetsCarregar();
+  sheetsCarregar().then(() => renderFoco());
 } else {
   setSyncStatus('offline');
 }
