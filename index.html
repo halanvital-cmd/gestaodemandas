@@ -12,6 +12,7 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
   :root {
@@ -1227,6 +1228,7 @@ let editingId = null;
 let detailId = null;
 let deleteTargetId = null;
 let charts = {};
+if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 let apiUrl = localStorage.getItem(API_KEY) || '';
 
 function loadData() {
@@ -2040,7 +2042,19 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
       labels: ['Aberto','Andamento','Finalizado'],
       datasets: [{ data: [aberto, andamento, finalizado], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderWidth: 2, borderColor: isDark ? '#1e1e1e' : '#fff' }]
     },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } } }, cutout: '60%' }
+    options: {
+      responsive: true,
+      cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          color: '#fff',
+          font: { weight: 'bold', size: 13 },
+          formatter: val => val
+        }
+      }
+    }
   });
 
   // PRIORIDADE BAR
@@ -2052,7 +2066,24 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
       labels: ['Alta','Média','Baixa'],
       datasets: [{ data: [alta, media, baixa], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderRadius: 6 }]
     },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+    options: {
+      responsive: true,
+      layout: { padding: { top: 20 } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor: 'end', align: 'end',
+          color: textColor,
+          font: { weight: 'bold', size: 12 },
+          formatter: val => val
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+        x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
+      }
+    }
   });
 
   // EVOLUÇÃO LINHA
@@ -2081,44 +2112,65 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
         { label: 'Finalizadas',data: months.map(m => finalizadosByMonth[m.key]),borderColor: '#66bb6a', backgroundColor: 'rgba(102,187,106,0.15)', tension: 0.4, fill: true, pointRadius: 4 }
       ]
     },
-    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+    options: {
+      responsive: true,
+      layout: { padding: { top: 20 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 }, padding: 8 } },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          align: 'top', anchor: 'end',
+          color: ctx => ctx.datasetIndex === 0 ? '#42a5f5' : '#66bb6a',
+          font: { weight: 'bold', size: 11 },
+          formatter: val => val
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+        x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
+      }
+    }
   });
 
-  // SETORES
+  // SETORES — BARRAS HORIZONTAIS
   const setorCount = {};
   filtrados.forEach(d => { if (d.setor) setorCount[d.setor] = (setorCount[d.setor]||0)+1; });
   const sorted = Object.entries(setorCount).sort((a,b) => b[1]-a[1]).slice(0,8);
   const ctxSetor = document.getElementById('chartSetor').getContext('2d');
   if (charts.setor) charts.setor.destroy();
-  const alturaSetor = Math.max(120, Math.min(sorted.length * 40, 220));
+  const alturaSetor = Math.max(140, Math.min(sorted.length * 50, 320));
+  ctxSetor.canvas.style.height = alturaSetor + 'px';
   charts.setor = new Chart(ctxSetor, {
     type: 'bar',
-    data: { labels: sorted.map(s => s[0]), datasets: [{ label: 'Demandas', data: sorted.map(s => s[1]), backgroundColor: '#42a5f5', borderRadius: 6, barThickness: 22 }] },
+    data: {
+      labels: sorted.map(s => s[0]),
+      datasets: [{
+        data: sorted.map(s => s[1]),
+        backgroundColor: '#42a5f5',
+        borderRadius: 6,
+        maxBarThickness: 28,
+        barPercentage: 0.55,
+        categoryPercentage: 0.9
+      }]
+    },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        datalabels: { display: false },
+        datalabels: {
+          display: true,
+          anchor: 'end', align: 'end',
+          color: textColor,
+          font: { weight: 'bold', size: 11 },
+          formatter: val => val + (val === 1 ? ' demanda' : ' demandas')
+        }
       },
       scales: {
-        x: { beginAtZero: true, max: Math.max(...sorted.map(s=>s[1])) + 1, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+        x: { beginAtZero: true, max: Math.max(...sorted.map(s=>s[1])) + 2, ticks: { stepSize: 1, color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
         y: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
-      },
-      animation: { onComplete: function() {
-        const ctx2 = this.ctx;
-        ctx2.font = 'bold 11px Segoe UI';
-        ctx2.fillStyle = textColor;
-        ctx2.textAlign = 'left';
-        ctx2.textBaseline = 'middle';
-        this.data.datasets[0].data.forEach((val, i) => {
-          const meta = this.getDatasetMeta(0);
-          const bar = meta.data[i];
-          if (bar) ctx2.fillText(' ' + val + (val === 1 ? ' demanda' : ' demandas'), bar.x, bar.y);
-        });
-      }}
+      }
     }
   });
-  ctxSetor.canvas.style.height = alturaSetor + 'px';
 
   // TEMPO MÉDIO
   const tm = calcTempoMedio(filtrados);
@@ -2130,7 +2182,24 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
       labels: ['Alta','Média','Baixa'],
       datasets: [{ label: 'Dias até finalizar', data: [tm.porPrioridade['Alta']||0, tm.porPrioridade['Média']||0, tm.porPrioridade['Baixa']||0], backgroundColor: ['#ef5350','#ffa726','#66bb6a'], borderRadius: 6 }]
     },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } }, x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } } } }
+    options: {
+      responsive: true,
+      layout: { padding: { top: 20 } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          anchor: 'end', align: 'end',
+          color: textColor,
+          font: { weight: 'bold', size: 12 },
+          formatter: val => val + 'd'
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: textColor, font: { size: 10 } }, grid: { color: isDark ? '#333' : '#f0f0f0' } },
+        x: { ticks: { color: textColor, font: { size: 10 } }, grid: { display: false } }
+      }
+    }
   });
   document.getElementById('tempoMedioInfo').textContent = tm.total
     ? `Média geral: ${tm.media} dias (baseado em ${tm.total} demanda${tm.total!==1?'s':''} finalizada${tm.total!==1?'s':''})`
