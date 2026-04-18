@@ -658,6 +658,21 @@
 
   /* ── COMPRAS ─────────────────────────────────────────────────── */
 
+  /* SWIPE CARDS */
+  .swipe-wrap { position:relative; overflow:hidden; border-radius:12px; }
+  .swipe-actions-behind { position:absolute; right:0; top:0; bottom:0; display:flex; z-index:0; }
+  .swipe-btn { width:72px; border:none; font-size:0.68rem; font-weight:700; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:white; transition:filter 0.15s; }
+  .swipe-btn:hover { filter:brightness(1.1); }
+  .swipe-btn.editar { background:#1a237e; }
+  .swipe-btn.finalizar { background:#4caf50; }
+  .swipe-btn i { font-size:1rem; }
+  .swipe-card-inner { position:relative; z-index:1; transition:transform 0.25s ease; }
+  .swipe-wrap.revealed .swipe-card-inner { transform:translateX(-144px); }
+
+  /* FILTRO RÁPIDO BANNER */
+  .filtro-rapido-banner { display:flex; align-items:center; justify-content:space-between; background:#e8eaf6; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:0.8rem; color:#1a237e; font-weight:600; }
+  .filtro-rapido-banner button { background:none; border:none; color:#1a237e; cursor:pointer; font-size:1rem; padding:0 4px; }
+
   /* PERIODO FILTER */
   .periodo-bar {
     display: flex;
@@ -686,6 +701,42 @@
   .periodo-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
   body.dark .periodo-btn { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
   body.dark .periodo-btn.active { background: var(--primary); color: white; }
+
+  /* CUSTOM DATE RANGE */
+  .periodo-custom-panel {
+    display: none;
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1.5px solid #c5cae9;
+    animation: slideDown 0.2s ease;
+  }
+  .periodo-custom-panel.show { display: block; }
+  @keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .periodo-custom-panel label { font-size:0.75rem; font-weight:700; color:var(--primary); display:block; margin-bottom:4px; }
+  .periodo-custom-panel input[type="date"] {
+    width: 100%; border: 1.5px solid #e0e0e0; border-radius: 8px;
+    padding: 9px 10px; font-size: 0.88rem; outline: none;
+    background: #fafafa; color: #212121; transition: border 0.2s;
+    -webkit-appearance: none;
+  }
+  .periodo-custom-panel input[type="date"]:focus { border-color: var(--accent); background: white; }
+  .periodo-custom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  @media (max-width: 360px) { .periodo-custom-row { grid-template-columns: 1fr; } }
+  .btn-aplicar-periodo {
+    width: 100%; padding: 10px; background: var(--primary); color: white;
+    border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-aplicar-periodo:active { background: var(--primary-light); }
+  .periodo-range-label {
+    font-size: 0.7rem; color: #9e9e9e; text-align: center; margin-top: 8px;
+  }
+  body.dark .periodo-custom-panel { background: #1e1e1e; border-color: #3949ab; }
+  body.dark .periodo-custom-panel label { color: #90caf9; }
+  body.dark .periodo-custom-panel input[type="date"] { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
 
   /* PRAZO BADGES */
   .badge-prazo { font-size:0.65rem; padding:2px 8px; border-radius:20px; font-weight:700; display:inline-block; margin-top:3px; }
@@ -736,6 +787,15 @@
       <div style="font-size:0.78rem;color:#388e3c;margin-bottom:10px;">Gera planilha .xlsx com todas as demandas e KPIs</div>
       <button class="btn-action btn-status" style="width:100%;padding:10px;" onclick="exportExcel();closeSyncModal()">
         <i class="fa-solid fa-download me-1"></i>Baixar Excel (.xlsx)
+      </button>
+    </div>
+    <div style="background:#f3e5f5;border-radius:10px;padding:14px;margin-top:10px;">
+      <div style="font-size:0.78rem;font-weight:700;color:#6a1b9a;margin-bottom:6px;">
+        <i class="fa-solid fa-file-pdf me-1"></i>RELATÓRIO SEMANAL
+      </div>
+      <div style="font-size:0.78rem;color:#6a1b9a;margin-bottom:10px;">Gera um resumo PDF das demandas para compartilhar</div>
+      <button class="btn-action" style="width:100%;padding:10px;background:#9c27b0;color:white;" onclick="gerarRelatorio();closeSyncModal()">
+        <i class="fa-solid fa-file-pdf me-1"></i>Gerar Relatório PDF
       </button>
     </div>
 
@@ -917,10 +977,29 @@ function ok(data) {
 
   <!-- FILTRO PERÍODO -->
   <div class="periodo-bar">
-    <button class="periodo-btn active" onclick="setPeriodo('tudo',this)">Tudo</button>
-    <button class="periodo-btn" onclick="setPeriodo('semana',this)">Esta semana</button>
-    <button class="periodo-btn" onclick="setPeriodo('mes',this)">Este mês</button>
-    <button class="periodo-btn" onclick="setPeriodo('trimestre',this)">Trimestre</button>
+    <button class="periodo-btn active" id="pbTudo"      onclick="setPeriodo('tudo',this)">Tudo</button>
+    <button class="periodo-btn"        id="pbSemana"    onclick="setPeriodo('semana',this)">Esta semana</button>
+    <button class="periodo-btn"        id="pbMes"       onclick="setPeriodo('mes',this)">Este mês</button>
+    <button class="periodo-btn"        id="pbTrimestre" onclick="setPeriodo('trimestre',this)">Trimestre</button>
+    <button class="periodo-btn"        id="pbCustom"    onclick="setPeriodo('custom',this)"><i class="fa-regular fa-calendar-days me-1"></i>Período</button>
+  </div>
+
+  <!-- PAINEL PERÍODO PERSONALIZADO -->
+  <div class="periodo-custom-panel" id="periodoCustomPanel">
+    <div class="periodo-custom-row">
+      <div>
+        <label><i class="fa-solid fa-calendar-day me-1"></i>Data início</label>
+        <input type="date" id="periodoIni" oninput="atualizarLabelPeriodo()">
+      </div>
+      <div>
+        <label><i class="fa-solid fa-calendar-check me-1"></i>Data fim</label>
+        <input type="date" id="periodoFim" oninput="atualizarLabelPeriodo()">
+      </div>
+    </div>
+    <button class="btn-aplicar-periodo" onclick="aplicarPeriodoCustom()">
+      <i class="fa-solid fa-filter me-1"></i>Aplicar filtro
+    </button>
+    <div class="periodo-range-label" id="periodoRangeLabel"></div>
   </div>
 
   <div class="kpi-grid">
@@ -1009,6 +1088,7 @@ function ok(data) {
       <canvas id="chartMaquina"></canvas>
     </div>
     <div id="chartMaquinaVazio" style="display:none;text-align:center;padding:20px;color:#9e9e9e;font-size:0.8rem;">Nenhuma máquina cadastrada ainda.</div>
+    <div style="font-size:0.68rem;color:#9e9e9e;text-align:center;margin-top:6px;"><i class="fa-solid fa-hand-pointer me-1"></i>Toque numa barra para filtrar as demandas</div>
   </div>
 
   <!-- CHART POR SOLICITANTE -->
@@ -1018,6 +1098,7 @@ function ok(data) {
       <canvas id="chartSolicitante"></canvas>
     </div>
     <div id="chartSolicitanteVazio" style="display:none;text-align:center;padding:20px;color:#9e9e9e;font-size:0.8rem;">Nenhum solicitante cadastrado ainda.</div>
+    <div style="font-size:0.68rem;color:#9e9e9e;text-align:center;margin-top:6px;"><i class="fa-solid fa-hand-pointer me-1"></i>Toque numa barra para filtrar as demandas</div>
   </div>
 </div>
 
@@ -1108,7 +1189,13 @@ function ok(data) {
     </div>
   </div>
 
-  <div class="section-title" id="listCount">0 demandas</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;">
+    <div class="section-title" id="listCount">0 demandas</div>
+  </div>
+  <div id="filtroRapidoBanner" style="display:none" class="filtro-rapido-banner">
+    <span><i class="fa-solid fa-filter me-1"></i><span id="filtroRapidoTexto"></span></span>
+    <button onclick="limparFiltroRapido()" title="Limpar filtro"><i class="fa-solid fa-xmark"></i></button>
+  </div>
   <div id="demandList"></div>
 </div>
 
@@ -1201,21 +1288,21 @@ function ok(data) {
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
+  <button onclick="switchTab('dashboard')" id="nav-dashboard">
+    <i class="fa-solid fa-chart-pie"></i>
+    Gráficos
+  </button>
   <button onclick="switchTab('foco')" id="nav-foco" class="active">
     <i class="fa-solid fa-crosshairs"></i>
     Foco
-  </button>
-  <button onclick="switchTab('demandas')" id="nav-demandas">
-    <i class="fa-solid fa-list-ul"></i>
-    Demandas
   </button>
   <button onclick="abrirRapida()" id="nav-rapida" class="btn-new-fab">
     <i class="fa-solid fa-bolt"></i>
     Rápida
   </button>
-<button onclick="switchTab('dashboard')" id="nav-dashboard">
-    <i class="fa-solid fa-chart-pie"></i>
-    Gráficos
+  <button onclick="switchTab('demandas')" id="nav-demandas">
+    <i class="fa-solid fa-list-ul"></i>
+    Demandas
   </button>
   <button onclick="switchTab('tabela')" id="nav-tabela">
     <i class="fa-solid fa-table"></i>
@@ -1329,6 +1416,7 @@ let editingId = null;
 let detailId = null;
 let deleteTargetId = null;
 let charts = {};
+let filtroRapido = { tipo: '', valor: '' };
 if (typeof ChartDataLabels !== 'undefined') Chart.register(ChartDataLabels);
 let apiUrl = localStorage.getItem(API_KEY) || '';
 
@@ -1607,8 +1695,19 @@ function renderList() {
       .some(v => (v||'').toLowerCase().includes(search));
     const matchStatus = !status || d.status === status;
     const matchPrior  = !prior  || d.prioridade === prior;
-    return matchSearch && matchStatus && matchPrior;
+    const matchFiltro = !filtroRapido.tipo || (d[filtroRapido.tipo]||'').trim() === filtroRapido.valor;
+    return matchSearch && matchStatus && matchPrior && matchFiltro;
   });
+
+  // Filtro rápido banner
+  const banner = document.getElementById('filtroRapidoBanner');
+  if (filtroRapido.tipo) {
+    banner.style.display = 'flex';
+    const nomesCampo = { maquina: 'Máquina', solicitante: 'Solicitante', setor: 'Setor' };
+    document.getElementById('filtroRapidoTexto').textContent = (nomesCampo[filtroRapido.tipo]||filtroRapido.tipo) + ': ' + filtroRapido.valor;
+  } else {
+    banner.style.display = 'none';
+  }
 
   document.getElementById('listCount').textContent = filtered.length + ' demanda' + (filtered.length !== 1 ? 's' : '');
 
@@ -1632,30 +1731,43 @@ function renderList() {
   function cardHtml(d) {
     const sc = d.status.replace(' ', '.');
     const bc = 'badge-' + d.status.replace(' ', '-');
+    const jaFinalizado = d.status === 'Finalizado';
     return `
-      <div class="demand-card status-${sc} prior-${d.prioridade}" onclick="openDetail('${d.id}')">
-        <div class="demand-photo-wrap">
-          <div style="flex:1">
-            <div class="demand-header">
-              <div>
-                <div class="demand-num">#${String(d.num).padStart(3,'0')} · ${formatDate(d.data)}</div>
-                <div class="demand-title">${escHtml(d.descricao.substring(0,80))}${d.descricao.length>80?'...':''}</div>
+    <div class="swipe-wrap" id="sw_${d.id}">
+      <div class="swipe-actions-behind">
+        <button class="swipe-btn editar" onclick="event.stopPropagation();closeSwipes();loadEdit('${d.id}')">
+          <i class="fa-solid fa-pen"></i>Editar
+        </button>
+        <button class="swipe-btn finalizar" onclick="event.stopPropagation();finalizarRapido('${d.id}')" ${jaFinalizado?'style="background:#9e9e9e"':''}>
+          <i class="fa-solid fa-check"></i>${jaFinalizado?'Feito':'Finalizar'}
+        </button>
+      </div>
+      <div class="swipe-card-inner">
+        <div class="demand-card status-${sc} prior-${d.prioridade}" onclick="openDetail('${d.id}')">
+          <div class="demand-photo-wrap">
+            <div style="flex:1">
+              <div class="demand-header">
+                <div>
+                  <div class="demand-num">#${String(d.num).padStart(3,'0')} · ${formatDate(d.data)}</div>
+                  <div class="demand-title">${escHtml(d.descricao.substring(0,80))}${d.descricao.length>80?'...':''}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+                  <span class="badge-status ${bc}">${d.status}</span>
+                  <span class="badge-prior badge-${d.prioridade}">${d.prioridade}</span>
+                  ${prazoHtmlFn(d)}
+                </div>
               </div>
-              <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-                <span class="badge-status ${bc}">${d.status}</span>
-                <span class="badge-prior badge-${d.prioridade}">${d.prioridade}</span>
-                ${prazoHtmlFn(d)}
+              <div class="demand-meta">
+                ${d.solicitante ? `<span><i class="fa-solid fa-user"></i>${escHtml(d.solicitante)}</span>` : ''}
+                ${d.setor ? `<span><i class="fa-solid fa-building"></i>${escHtml(d.setor)}</span>` : ''}
+                ${d.maquina ? `<span><i class="fa-solid fa-gears"></i>${escHtml(d.maquina)}</span>` : ''}
               </div>
             </div>
-            <div class="demand-meta">
-              ${d.solicitante ? `<span><i class="fa-solid fa-user"></i>${escHtml(d.solicitante)}</span>` : ''}
-              ${d.setor ? `<span><i class="fa-solid fa-building"></i>${escHtml(d.setor)}</span>` : ''}
-              ${d.maquina ? `<span><i class="fa-solid fa-gears"></i>${escHtml(d.maquina)}</span>` : ''}
-            </div>
+            ${d.foto ? `<img src="${d.foto}" class="demand-photo" alt="foto">` : ''}
           </div>
-          ${d.foto ? `<img src="${d.foto}" class="demand-photo" alt="foto">` : ''}
         </div>
-      </div>`;
+      </div>
+    </div>`;
   }
 
   function postitHtml(d) {
@@ -1747,6 +1859,7 @@ function renderList() {
   // ── CARD (padrão) ────────────────────────────────────────────────
   container.className = 'demand-list';
   container.innerHTML = groupAndRender(filtered, cardHtml, 'demand-list');
+  requestAnimationFrame(initSwipes);
 }
 
 // ─── DETAIL MODAL ─────────────────────────────────────────────────
@@ -1978,12 +2091,57 @@ function initDarkMode() {
 
 // ─── PERÍODO DASHBOARD ────────────────────────────────────────────
 let periodoAtivo = 'tudo';
+let periodoCustom = { ini: '', fim: '' };
+
 function setPeriodo(p, btn) {
   periodoAtivo = p;
   document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  updateDashboard();
+  const painel = document.getElementById('periodoCustomPanel');
+  if (p === 'custom') {
+    painel.classList.add('show');
+    // Pré-preenche datas se vazias: início = 1º do mês, fim = hoje
+    if (!document.getElementById('periodoIni').value) {
+      const now = new Date();
+      document.getElementById('periodoIni').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
+      document.getElementById('periodoFim').value = now.toISOString().split('T')[0];
+      periodoCustom = {
+        ini: document.getElementById('periodoIni').value,
+        fim: document.getElementById('periodoFim').value
+      };
+    }
+    atualizarLabelPeriodo();
+    updateDashboard();
+  } else {
+    painel.classList.remove('show');
+    periodoCustom = { ini: '', fim: '' };
+    updateDashboard();
+  }
 }
+
+function atualizarLabelPeriodo() {
+  const ini = document.getElementById('periodoIni').value;
+  const fim = document.getElementById('periodoFim').value;
+  const label = document.getElementById('periodoRangeLabel');
+  if (ini && fim) {
+    label.textContent = formatDate(ini) + ' → ' + formatDate(fim);
+  } else if (ini) {
+    label.textContent = 'A partir de ' + formatDate(ini);
+  } else {
+    label.textContent = '';
+  }
+}
+
+function aplicarPeriodoCustom() {
+  const ini = document.getElementById('periodoIni').value;
+  const fim = document.getElementById('periodoFim').value;
+  if (!ini && !fim) { showToast('Selecione pelo menos uma data.', 'error'); return; }
+  if (ini && fim && ini > fim) { showToast('A data início deve ser anterior à data fim.', 'error'); return; }
+  periodoCustom = { ini, fim };
+  updateDashboard();
+  showToast('Filtro aplicado: ' + formatDate(ini||'') + (fim?' → '+formatDate(fim):''), 'success');
+}
+
 function filtrarPorPeriodo(lista) {
   if (periodoAtivo === 'tudo') return lista;
   const now = new Date();
@@ -2001,6 +2159,13 @@ function filtrarPorPeriodo(lista) {
       const mesIni = Math.floor(now.getMonth() / 3) * 3;
       const ini = new Date(now.getFullYear(), mesIni, 1);
       return dt >= ini;
+    }
+    if (periodoAtivo === 'custom') {
+      const ini = periodoCustom.ini ? new Date(periodoCustom.ini + 'T00:00:00') : null;
+      const fim = periodoCustom.fim ? new Date(periodoCustom.fim + 'T23:59:59') : null;
+      if (ini && dt < ini) return false;
+      if (fim && dt > fim) return false;
+      return true;
     }
     return true;
   });
@@ -2413,7 +2578,7 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
     : 'Ainda sem demandas finalizadas para calcular.';
 
   // CHART POR MÁQUINA
-  function buildHorizChart(canvasId, wrapId, vazioId, dados, cor) {
+  function buildHorizChart(canvasId, wrapId, vazioId, dados, cor, tipo) {
     const sorted2 = Object.entries(dados).sort((a,b) => b[1]-a[1]).slice(0,8);
     const vazio = document.getElementById(vazioId);
     const wrap  = document.getElementById(wrapId);
@@ -2433,6 +2598,16 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
       options: {
         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
         layout: { padding: { right: 80 } },
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const label = sorted2[elements[0].index][0];
+            filtrarPorCampo(tipo, label);
+            switchTab('demandas');
+          }
+        },
+        onHover: (event, elements) => {
+          if (event.native) event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+        },
         plugins: {
           legend: { display: false },
           datalabels: {
@@ -2452,12 +2627,12 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
   const maquinaCount = {};
   filtrados.forEach(d => { if (d.maquina && d.maquina.trim()) maquinaCount[d.maquina.trim()] = (maquinaCount[d.maquina.trim()]||0)+1; });
   if (charts.maquina) charts.maquina.destroy();
-  charts.maquina = buildHorizChart('chartMaquina','chartMaquinaWrap','chartMaquinaVazio', maquinaCount, '#ab47bc');
+  charts.maquina = buildHorizChart('chartMaquina','chartMaquinaWrap','chartMaquinaVazio', maquinaCount, '#ab47bc', 'maquina');
 
   const solicitanteCount = {};
   filtrados.forEach(d => { if (d.solicitante && d.solicitante.trim()) solicitanteCount[d.solicitante.trim()] = (solicitanteCount[d.solicitante.trim()]||0)+1; });
   if (charts.solicitante) charts.solicitante.destroy();
-  charts.solicitante = buildHorizChart('chartSolicitante','chartSolicitanteWrap','chartSolicitanteVazio', solicitanteCount, '#26a69a');
+  charts.solicitante = buildHorizChart('chartSolicitante','chartSolicitanteWrap','chartSolicitanteVazio', solicitanteCount, '#26a69a', 'solicitante');
 
   // DESTAQUE ATRASADOS na lista
   document.querySelectorAll('.demand-card').forEach(card => {
@@ -2643,6 +2818,200 @@ function renderHistorico(hist) {
       <div style="color:#212121;margin-top:2px;">${escHtml(h.texto)}</div>
     </div>
   `).join('');
+}
+
+// ─── FILTRO RÁPIDO ───────────────────────────────────────────────
+function filtrarPorCampo(tipo, valor) {
+  filtroRapido = { tipo, valor };
+  switchTab('demandas');
+}
+function limparFiltroRapido() {
+  filtroRapido = { tipo: '', valor: '' };
+  renderList();
+}
+
+// ─── SWIPE ───────────────────────────────────────────────────────
+function closeSwipes() {
+  document.querySelectorAll('.swipe-wrap.revealed').forEach(el => el.classList.remove('revealed'));
+}
+
+function initSwipes() {
+  document.querySelectorAll('.swipe-wrap').forEach(wrap => {
+    // evitar re-bind
+    if (wrap.dataset.swipeReady) return;
+    wrap.dataset.swipeReady = '1';
+    let startX = 0, startY = 0, moved = false;
+    wrap.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      moved = false;
+    }, { passive: true });
+    wrap.addEventListener('touchmove', e => {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if (!moved && Math.abs(dy) > Math.abs(dx)) return; // scroll vertical
+      moved = true;
+    }, { passive: true });
+    wrap.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = Math.abs(e.changedTouches[0].clientY - startY);
+      if (dy > 30) return; // foi scroll
+      if (dx < -50) {
+        // deslizou para esquerda → revela botões
+        closeSwipes();
+        wrap.classList.add('revealed');
+      } else if (dx > 30) {
+        // deslizou para direita → fecha
+        wrap.classList.remove('revealed');
+      }
+    });
+  });
+  // toque fora fecha todos
+  document.addEventListener('touchstart', e => {
+    if (!e.target.closest('.swipe-wrap')) closeSwipes();
+  }, { passive: true });
+}
+
+function finalizarRapido(id) {
+  const idx = demandas.findIndex(d => String(d.id) === String(id));
+  if (idx === -1) return;
+  if (demandas[idx].status === 'Finalizado') {
+    showToast('Esta demanda já está finalizada.', 'error');
+    closeSwipes();
+    return;
+  }
+  demandas[idx].status = 'Finalizado';
+  demandas[idx].atualizado = new Date().toISOString();
+  if (!demandas[idx].finalizado) demandas[idx].finalizado = new Date().toISOString();
+  saveData();
+  sheetsUpsert(demandas[idx]);
+  showToast('✅ Demanda #' + String(demandas[idx].num).padStart(3,'0') + ' finalizada!', 'success');
+  closeSwipes();
+  renderList();
+  updateDashboard();
+}
+
+// ─── RELATÓRIO PDF ───────────────────────────────────────────────
+function gerarRelatorio() {
+  if (!demandas.length) { showToast('Nenhuma demanda para gerar relatório.', 'error'); return; }
+
+  const hoje = new Date();
+  const dtStr = hoje.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' });
+
+  const total      = demandas.length;
+  const aberto     = demandas.filter(d => d.status === 'Aberto').length;
+  const andamento  = demandas.filter(d => d.status === 'Em Andamento').length;
+  const finalizado = demandas.filter(d => d.status === 'Finalizado').length;
+  const alta       = demandas.filter(d => d.prioridade === 'Alta' && d.status !== 'Finalizado').length;
+  const atrasadas  = demandas.filter(d => d.prazo && d.status !== 'Finalizado' && getDiasAtraso(d) < 0).length;
+  const pct        = total ? Math.round(finalizado / total * 100) : 0;
+
+  // Lista das abertas/andamento ordenadas por prioridade
+  const abertas = demandas
+    .filter(d => d.status !== 'Finalizado')
+    .sort((a, b) => {
+      const ord = { Alta: 0, 'Média': 1, Baixa: 2 };
+      return (ord[a.prioridade] ?? 3) - (ord[b.prioridade] ?? 3);
+    });
+
+  const recentes = demandas
+    .filter(d => d.status === 'Finalizado')
+    .sort((a, b) => new Date(b.finalizado||0) - new Date(a.finalizado||0))
+    .slice(0, 10);
+
+  function corPrior(p) { return p==='Alta'?'#ef5350':p==='Média'?'#ffa726':'#66bb6a'; }
+  function corStatus(s) { return s==='Aberto'?'#ef5350':s==='Em Andamento'?'#ffa726':'#66bb6a'; }
+
+  function linhaTabela(d) {
+    const dias = getDiasAtraso(d);
+    const atrasado = dias !== null && dias < 0;
+    return `<tr style="${atrasado?'background:#fff5f5':''}">
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-weight:700;color:#1a237e;white-space:nowrap">#${String(d.num).padStart(3,'0')}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;max-width:250px">${d.descricao.substring(0,70)}${d.descricao.length>70?'...':''}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap">${d.setor||'-'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap">${d.maquina||'-'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap"><span style="color:${corPrior(d.prioridade)};font-weight:700">${d.prioridade}</span></td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap"><span style="color:${corStatus(d.status)};font-weight:700">${d.status}</span></td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap">${d.prazo ? formatDate(d.prazo) + (atrasado?` <b style="color:#e53935">(${Math.abs(dias)}d atras.)</b>`:'') : '-'}</td>
+    </tr>`;
+  }
+
+  function linhaFinalizada(d) {
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;font-weight:700;color:#1a237e;white-space:nowrap">#${String(d.num).padStart(3,'0')}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;max-width:250px">${d.descricao.substring(0,70)}${d.descricao.length>70?'...':''}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap">${d.setor||'-'}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;white-space:nowrap">${d.finalizado ? formatDatetime(d.finalizado) : '-'}</td>
+    </tr>`;
+  }
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Relatório de Demandas · ${dtStr}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',Arial,sans-serif; color:#212121; background:white; padding:28px 32px; font-size:13px; }
+  h1 { font-size:22px; color:#1a237e; margin-bottom:4px; }
+  .subtitle { color:#757575; font-size:12px; margin-bottom:24px; }
+  .kpis { display:flex; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+  .kpi { flex:1; min-width:100px; background:#f5f7ff; border-radius:10px; padding:14px 16px; border-left:4px solid; }
+  .kpi-num { font-size:28px; font-weight:800; line-height:1; }
+  .kpi-lbl { font-size:11px; color:#757575; margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { background:#1a237e; color:white; padding:8px 10px; text-align:left; font-size:11px; font-weight:700; letter-spacing:0.3px; }
+  h2 { font-size:14px; font-weight:800; color:#1a237e; margin:22px 0 10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #e8eaf6; padding-bottom:6px; }
+  .alert { background:#fff3cd; border-left:4px solid #ffa726; border-radius:6px; padding:10px 14px; font-size:12px; color:#795548; margin-bottom:16px; }
+  @media print {
+    body { padding:10px 14px; }
+    @page { margin:1.2cm; size:A4; }
+  }
+</style>
+</head>
+<body>
+<h1>📋 Relatório de Demandas</h1>
+<div class="subtitle">Gerado em ${dtStr} · GRD – Gerenciamento da Rotina de Trabalho</div>
+
+${atrasadas > 0 ? `<div class="alert">⚠ Atenção: ${atrasadas} demanda${atrasadas!==1?'s':''} com prazo vencido!</div>` : ''}
+
+<div class="kpis">
+  <div class="kpi" style="border-color:#1a237e"><div class="kpi-num" style="color:#1a237e">${total}</div><div class="kpi-lbl">Total</div></div>
+  <div class="kpi" style="border-color:#ef5350"><div class="kpi-num" style="color:#ef5350">${aberto}</div><div class="kpi-lbl">Em Aberto</div></div>
+  <div class="kpi" style="border-color:#ffa726"><div class="kpi-num" style="color:#ffa726">${andamento}</div><div class="kpi-lbl">Em Andamento</div></div>
+  <div class="kpi" style="border-color:#66bb6a"><div class="kpi-num" style="color:#66bb6a">${finalizado}</div><div class="kpi-lbl">Finalizadas</div></div>
+  <div class="kpi" style="border-color:#ef5350"><div class="kpi-num" style="color:#ef5350">${alta}</div><div class="kpi-lbl">Alta Prior.</div></div>
+  <div class="kpi" style="border-color:#9c27b0"><div class="kpi-num" style="color:#9c27b0">${pct}%</div><div class="kpi-lbl">Conclusão</div></div>
+</div>
+
+${abertas.length ? `
+<h2>🔴 Demandas Abertas / Em Andamento (${abertas.length})</h2>
+<table>
+  <thead><tr><th>Nº</th><th>Descrição</th><th>Setor</th><th>Máquina</th><th>Prior.</th><th>Status</th><th>Prazo</th></tr></thead>
+  <tbody>${abertas.map(linhaTabela).join('')}</tbody>
+</table>` : ''}
+
+${recentes.length ? `
+<h2>✅ Finalizadas Recentemente (${recentes.length})</h2>
+<table>
+  <thead><tr><th>Nº</th><th>Descrição</th><th>Setor</th><th>Finalizado em</th></tr></thead>
+  <tbody>${recentes.map(linhaFinalizada).join('')}</tbody>
+</table>` : ''}
+
+<div style="margin-top:28px;font-size:11px;color:#bdbdbd;text-align:center;border-top:1px solid #f0f0f0;padding-top:12px;">
+  Relatório gerado automaticamente pelo GRD · Projeart
+</div>
+<script>window.print();<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    showToast('Permita pop-ups para gerar o relatório PDF.', 'error');
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────
