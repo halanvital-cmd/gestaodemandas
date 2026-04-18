@@ -656,6 +656,8 @@
   body.dark .kanban-card { background:#1e1e1e; }
   body.dark .kanban-card-desc { color:#e0e0e0; }
 
+  /* ── COMPRAS ─────────────────────────────────────────────────── */
+
   /* PERIODO FILTER */
   .periodo-bar {
     display: flex;
@@ -1211,11 +1213,7 @@ function ok(data) {
     <i class="fa-solid fa-bolt"></i>
     Rápida
   </button>
-  <button onclick="switchTab('nova')" id="nav-nova">
-    <i class="fa-solid fa-plus"></i>
-    Nova
-  </button>
-  <button onclick="switchTab('dashboard')" id="nav-dashboard">
+<button onclick="switchTab('dashboard')" id="nav-dashboard">
     <i class="fa-solid fa-chart-pie"></i>
     Gráficos
   </button>
@@ -2056,7 +2054,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('nav-' + tab).classList.add('active');
   if (tab === 'foco') renderFoco();
-  if (tab === 'dashboard') updateDashboard();
+if (tab === 'dashboard') updateDashboard();
   if (tab === 'demandas') renderList();
   if (tab === 'tabela') renderTabela();
   window.scrollTo(0, 0);
@@ -2470,6 +2468,8 @@ function drawCharts(aberto, andamento, finalizado, alta, media, baixa, filtrados
   });
 }
 
+
+
 // ─── ABA FOCO ─────────────────────────────────────────────────────
 function renderFoco() {
   const hoje = new Date(); hoje.setHours(0,0,0,0);
@@ -2530,14 +2530,14 @@ function renderFoco() {
   let html = `<div style="padding:4px 0 8px;">
     <div style="font-size:0.8rem;color:#9e9e9e;margin-bottom:12px;">
       <i class="fa-solid fa-crosshairs me-1"></i>
-      ${total === 0 ? 'Tudo em dia! Nenhuma ação urgente.' : total + ' demanda' + (total!==1?'s':'')+' precisam de atenção'}
+      ${total === 0 ? 'Tudo em dia! Nenhuma ação urgente.' : total + ' item' + (total!==1?'ns':'')+' precisam de atenção'}
     </div>`;
 
   if (total === 0) {
     html += `<div class="foco-tudo-ok">
       <div style="font-size:2.5rem;margin-bottom:8px;">✅</div>
       <div style="font-weight:700;color:var(--primary);font-size:1rem;">Tudo em dia!</div>
-      <div style="color:#9e9e9e;font-size:0.82rem;margin-top:4px;">Nenhuma demanda urgente no momento.</div>
+      <div style="color:#9e9e9e;font-size:0.82rem;margin-top:4px;">Nenhuma demanda ou cobrança urgente.</div>
     </div>`;
   } else {
     html += secao('ATRASADAS', 'fa-solid fa-circle-exclamation', 'atrasado', _atrasadas);
@@ -2660,7 +2660,7 @@ initForm();
 renderFoco();
 if (apiUrl) {
   setSyncStatus('syncing');
-  sheetsCarregar().then(() => renderFoco());
+  sheetsCarregar().then(() => { renderFoco(); updateDashboard(); renderList(); renderTabela(); });
 } else {
   setSyncStatus('offline');
 }
