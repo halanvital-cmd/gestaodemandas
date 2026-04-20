@@ -57,6 +57,7 @@
     .titulo-curto { display: inline; }
     .top-navbar h1 { font-size: 0.82rem; }
     .navbar-logo { height: 34px; max-width: 90px; }
+    .nav-clock-date { display: none; }
   }
   .btn-export-nav {
     background: rgba(255,255,255,0.15);
@@ -758,7 +759,8 @@
       <div class="subtitle">
         <span id="navSubtitle">Carregando...</span>
         <span style="opacity:0.55;margin:0 4px;">·</span>
-        <span id="navClock"></span>
+        <span id="navClockDate" class="nav-clock-date"></span>
+        <span id="navClockTime"></span>
       </div>
     </div>
   </div>
@@ -3057,8 +3059,10 @@ if (apiUrl) {
     const m = MESES[n.getMonth()];
     const h = String(n.getHours()).padStart(2,'0');
     const min = String(n.getMinutes()).padStart(2,'0');
-    const el = document.getElementById('navClock');
-    if (el) el.textContent = d + ' ' + dt + ' ' + m + ' · ' + h + ':' + min;
+    const elDate = document.getElementById('navClockDate');
+    const elTime = document.getElementById('navClockTime');
+    if (elDate) elDate.textContent = d + ' ' + dt + ' ' + m + ' · ';
+    if (elTime) elTime.textContent = h + ':' + min;
   }
   tick();
   setInterval(tick, 1000);
