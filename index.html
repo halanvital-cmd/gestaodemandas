@@ -48,7 +48,7 @@
   }
   .top-navbar h1 { font-size: 0.95rem; margin: 0; font-weight: 700; letter-spacing: 0.3px; line-height: 1.2; }
   .top-navbar .subtitle { font-size: 0.68rem; opacity: 0.75; }
-  .navbar-logo { height: 42px; width: auto; max-width: 110px; object-fit: contain; border-radius: 6px; background: white; padding: 3px 6px; flex-shrink: 0; }
+  .navbar-logo { height: 60px; width: auto; max-width: 150px; object-fit: contain; border-radius: 6px; background: white; padding: 4px 8px; flex-shrink: 0; }
   .navbar-left { display: flex; align-items: center; gap: 10px; }
   .titulo-completo { display: inline; }
   .titulo-curto { display: none; }
@@ -56,7 +56,7 @@
     .titulo-completo { display: none; }
     .titulo-curto { display: inline; }
     .top-navbar h1 { font-size: 0.82rem; }
-    .navbar-logo { height: 34px; max-width: 90px; }
+    .navbar-logo { height: 48px; max-width: 120px; }
     .nav-clock-date { display: none; }
   }
   .btn-export-nav {
@@ -636,6 +636,8 @@
   body.dark .demand-title { color: #f5f5f5; }
   body.dark .demand-num, body.dark .demand-meta span { color: #757575; }
   body.dark .filter-bar select, body.dark .filter-bar input { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
+  body.dark #btnFiltroAtrasados { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
+  body.dark #btnFiltroAtrasados[style*="b71c1c"] { background: #b71c1c !important; border-color: #b71c1c !important; color: white !important; }
   body.dark .form-card label { color: #bdbdbd; }
   body.dark .form-card input, body.dark .form-card select, body.dark .form-card textarea { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
   body.dark .section-title { color: #757575; }
@@ -1176,6 +1178,9 @@ function ok(data) {
       <option>Média</option>
       <option>Baixa</option>
     </select>
+    <button id="btnFiltroAtrasados" onclick="toggleFiltroAtrasados()" style="background:white;border:1.5px solid #e0e0e0;border-radius:20px;padding:6px 14px;font-size:0.75rem;font-weight:700;color:#9e9e9e;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all 0.2s;">
+      <i class="fa-solid fa-circle-exclamation"></i> Atrasados
+    </button>
   </div>
 
   <!-- TOOLBAR DE VISUALIZAÇÃO -->
@@ -1695,6 +1700,22 @@ function loadEdit(id) {
 }
 
 // ─── LIST ─────────────────────────────────────────────────────────
+let filtroAtrasados = false;
+function toggleFiltroAtrasados() {
+  filtroAtrasados = !filtroAtrasados;
+  const btn = document.getElementById('btnFiltroAtrasados');
+  if (filtroAtrasados) {
+    btn.style.background = '#b71c1c';
+    btn.style.borderColor = '#b71c1c';
+    btn.style.color = 'white';
+  } else {
+    btn.style.background = 'white';
+    btn.style.borderColor = '#e0e0e0';
+    btn.style.color = '#9e9e9e';
+  }
+  renderList();
+}
+
 function renderList() {
   const search = (document.getElementById('filterSearch').value || '').toLowerCase();
   const status = document.getElementById('filterStatus').value;
@@ -1706,7 +1727,8 @@ function renderList() {
     const matchStatus = !status || d.status === status;
     const matchPrior  = !prior  || d.prioridade === prior;
     const matchFiltro = !filtroRapido.tipo || (d[filtroRapido.tipo]||'').trim() === filtroRapido.valor;
-    return matchSearch && matchStatus && matchPrior && matchFiltro;
+    const matchAtrasado = !filtroAtrasados || isAtrasado(d);
+    return matchSearch && matchStatus && matchPrior && matchFiltro && matchAtrasado;
   });
 
   // Filtro rápido banner
