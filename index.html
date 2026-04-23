@@ -1517,11 +1517,42 @@ async function sheetsCarregar() {
   const dados = await sheetsGet();
   if (!dados) { setSyncStatus('error'); return; }
 
-  // Mescla: mantém fotos locais
+  // Mescla inteligente: compara timestamps e mantém a versão mais recente
   const fotosLocais = {};
-  demandas.forEach(d => { if (d.foto) fotosLocais[d.id] = d.foto; });
-  demandas = dados.map(d => ({ ...d, foto: fotosLocais[d.id] || null }));
+  const localMap = {};
+  demandas.forEach(d => {
+    if (d.foto) fotosLocais[d.id] = d.foto;
+    localMap[d.id] = d;
+  });
+  const sheetsMap = {};
+  dados.forEach(d => sheetsMap[d.id] = d);
+
+  // Para cada demanda do Sheets, usa a versão mais recente (local ou Sheets)
+  const merged = dados.map(d => {
+    const local = localMap[d.id];
+    const foto  = fotosLocais[d.id] || null;
+    if (local && local.atualizado && d.atualizado) {
+      const dtLocal  = new Date(local.atualizado);
+      const dtSheets = new Date(d.atualizado);
+      if (dtLocal > dtSheets) return { ...local, foto }; // local é mais novo → mantém
+    }
+    return { ...d, foto };
+  });
+
+  // Inclui demandas locais que ainda não chegaram ao Sheets (criadas offline)
+  demandas.forEach(d => { if (!sheetsMap[d.id]) merged.push(d); });
+
+  demandas = merged;
   saveData();
+
+  // Envia ao Sheets as demandas locais mais recentes que ainda não estão sincronizadas
+  const paraSubir = demandas.filter(d => {
+    const s = sheetsMap[d.id];
+    if (!s) return true; // nova local
+    return d.atualizado && s.atualizado && new Date(d.atualizado) > new Date(s.atualizado);
+  });
+  for (const d of paraSubir) sheetsUpsert(d);
+
   setSyncStatus('ok');
   updateDashboard();
   renderList();
