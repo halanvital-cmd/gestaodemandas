@@ -1966,7 +1966,7 @@ function updateStepBtns(status) {
 
 function quickStatus(newStatus) {
   if (!detailId) return;
-  const idx = demandas.findIndex(d => d.id === detailId);
+  const idx = demandas.findIndex(d => String(d.id) === String(detailId));
   if (idx === -1) return;
   demandas[idx].status = newStatus;
   demandas[idx].atualizado = new Date().toISOString();
@@ -2290,7 +2290,7 @@ function switchTab(tab) {
   if (tab === 'dashboard') updateDashboard();
   if (tab === 'demandas')  renderList();
   if (tab === 'tabela')    renderTabela();
-  if (tab === 'nova')      { editingId = null; initForm(); }
+  if (tab === 'nova' && !editingId) { initForm(); }
   window.scrollTo(0, 0);
 }
 function sortTabela(col) {
