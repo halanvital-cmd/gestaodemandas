@@ -1712,7 +1712,7 @@ function loadEdit(id) {
   if (!d) return;
   editingId = id;
   document.getElementById('editId').value = id;
-  document.getElementById('fData').value = d.data;
+  document.getElementById('fData').value = toInputDate(d.data);
   document.getElementById('fSolicitante').value = d.solicitante;
   document.getElementById('fSetor').value = d.setor || '';
   document.getElementById('fMaquina').value = d.maquina || '';
@@ -1720,7 +1720,7 @@ function loadEdit(id) {
   document.getElementById('fPrioridade').value = d.prioridade;
   document.getElementById('fStatus').value = d.status;
   document.getElementById('fObservacao').value = d.observacao || '';
-  document.getElementById('fPrazo').value = d.prazo || '';
+  document.getElementById('fPrazo').value = toInputDate(d.prazo);
   if (d.foto) {
     document.getElementById('fFotoPreview').src = d.foto;
     document.getElementById('fFotoPreview').style.display = 'block';
@@ -2116,6 +2116,17 @@ function formatDate(str) {
   const [y,m,d] = clean.split('-');
   if (!y || !m || !d) return str;
   return `${d}/${m}/${y}`;
+}
+// Converte DD/MM/AAAA ou AAAA-MM-DD → AAAA-MM-DD (formato exigido pelo input type="date")
+function toInputDate(str) {
+  if (!str) return '';
+  const s = String(str).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10); // já está certo
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [d, m, y] = s.split('/');
+    return `${y}-${m}-${d}`;
+  }
+  return s;
 }
 function formatDatetime(iso) {
   if (!iso) return '-';
