@@ -638,8 +638,9 @@
   body.dark .demand-title { color: #f5f5f5; }
   body.dark .demand-num, body.dark .demand-meta span { color: #757575; }
   body.dark .filter-bar select, body.dark .filter-bar input { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
-  body.dark #btnFiltroAtrasados { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
+  body.dark #btnFiltroAtrasados, body.dark #btnFiltroEmDia { background: #2a2a2a; border-color: #444; color: #9e9e9e; }
   body.dark #btnFiltroAtrasados[style*="b71c1c"] { background: #b71c1c !important; border-color: #b71c1c !important; color: white !important; }
+  body.dark #btnFiltroEmDia[style*="2e7d32"] { background: #2e7d32 !important; border-color: #2e7d32 !important; color: white !important; }
   body.dark .form-card label { color: #bdbdbd; }
   body.dark .form-card input, body.dark .form-card select, body.dark .form-card textarea { background: #2a2a2a; border-color: #444; color: #e0e0e0; }
   body.dark .section-title { color: #757575; }
@@ -1184,6 +1185,9 @@ function ok(data) {
     </select>
     <button id="btnFiltroAtrasados" onclick="toggleFiltroAtrasados()" style="background:white;border:1.5px solid #e0e0e0;border-radius:20px;padding:6px 14px;font-size:0.75rem;font-weight:700;color:#9e9e9e;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all 0.2s;">
       <i class="fa-solid fa-circle-exclamation"></i> Atrasados
+    </button>
+    <button id="btnFiltroEmDia" onclick="toggleFiltroEmDia()" style="background:white;border:1.5px solid #e0e0e0;border-radius:20px;padding:6px 14px;font-size:0.75rem;font-weight:700;color:#9e9e9e;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all 0.2s;">
+      <i class="fa-solid fa-circle-check"></i> Em Dia
     </button>
   </div>
 
@@ -1736,19 +1740,28 @@ function loadEdit(id) {
 
 // ─── LIST ─────────────────────────────────────────────────────────
 let filtroAtrasados = false;
+let filtroEmDia = false;
+
 function toggleFiltroAtrasados() {
   filtroAtrasados = !filtroAtrasados;
-  const btn = document.getElementById('btnFiltroAtrasados');
-  if (filtroAtrasados) {
-    btn.style.background = '#b71c1c';
-    btn.style.borderColor = '#b71c1c';
-    btn.style.color = 'white';
-  } else {
-    btn.style.background = 'white';
-    btn.style.borderColor = '#e0e0e0';
-    btn.style.color = '#9e9e9e';
-  }
+  if (filtroAtrasados) filtroEmDia = false; // desativa o outro
+  _aplicarEstiloBtnFiltro('btnFiltroAtrasados', filtroAtrasados, '#b71c1c');
+  _aplicarEstiloBtnFiltro('btnFiltroEmDia', false, '#2e7d32');
   renderList();
+}
+function toggleFiltroEmDia() {
+  filtroEmDia = !filtroEmDia;
+  if (filtroEmDia) filtroAtrasados = false; // desativa o outro
+  _aplicarEstiloBtnFiltro('btnFiltroEmDia', filtroEmDia, '#2e7d32');
+  _aplicarEstiloBtnFiltro('btnFiltroAtrasados', false, '#b71c1c');
+  renderList();
+}
+function _aplicarEstiloBtnFiltro(id, ativo, cor) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.style.background   = ativo ? cor : 'white';
+  btn.style.borderColor  = ativo ? cor : '#e0e0e0';
+  btn.style.color        = ativo ? 'white' : '#9e9e9e';
 }
 
 function renderList() {
@@ -1763,7 +1776,8 @@ function renderList() {
     const matchPrior  = !prior  || d.prioridade === prior;
     const matchFiltro = !filtroRapido.tipo || (d[filtroRapido.tipo]||'').trim() === filtroRapido.valor;
     const matchAtrasado = !filtroAtrasados || isAtrasado(d);
-    return matchSearch && matchStatus && matchPrior && matchFiltro && matchAtrasado;
+    const matchEmDia    = !filtroEmDia    || !isAtrasado(d);
+    return matchSearch && matchStatus && matchPrior && matchFiltro && matchAtrasado && matchEmDia;
   });
 
   // Filtro rápido banner
